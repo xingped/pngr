@@ -1,0 +1,43 @@
+<html>
+	<head>
+		<title>Hello World!</title>
+	</head>
+	<body>
+		<script src="js/socket.io.min.js"></script>
+		<script src="js/jquery-1.11.0.min.js"></script>
+		<script src="js/main.js"></script>
+		<script src="js/nw-desktop-notifications.js"></script>
+		
+		<h2>Connection: </h2>
+		<div id="output"></div>
+		<br />
+		<h2>Response: </h2>
+		<div id="response"></div>
+		
+		<div id='status' style='display: none;'></div>
+		
+		<script>
+			var gui = require('nw.gui');
+			var win = gui.Window.get();
+			var tray = new gui.Tray({title: 'Tray Title', icon: 'img/icon.png'});
+			
+			var menu = new gui.Menu();
+			menu.append(new gui.MenuItem({ type: 'checkbox', label: 'box1' }));
+			menu.append(new gui.MenuItem({
+				label: 'Exit',
+				click: function() {
+					gui.App.quit();
+				}
+			}));
+			tray.menu = menu;
+			
+			tray.on('click', function() {
+				win.show();
+			});
+			
+			win.on('close', function() {
+				this.hide();
+			});			
+		</script>
+	</body>
+</html>
