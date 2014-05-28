@@ -26,9 +26,36 @@ function ChatServer(url) {
 }
 
 function init() {
+/****
+  Initialize node-webkit gui
+****/
+	var gui = require('nw.gui');
+	var win = gui.Window.get();
+	win.resizeTo(300, 600);
+	var tray = new gui.Tray({title: 'Tray Title', icon: 'img/icon.png'});
+	
+	var menu = new gui.Menu();
+	menu.append(new gui.MenuItem({ type: 'checkbox', label: 'box1' }));
+	menu.append(new gui.MenuItem({
+		label: 'Exit',
+		click: function() {
+			gui.App.quit();
+		}
+	}));
+	tray.menu = menu;
+	
+	tray.on('click', function() {
+		win.show();
+	});
+
+/****
+  Connect to servers
+****/
 	var servers = new Array();
 	servers.push(new ChatServer('192.168.1.11:8080'));
 	//servers.push(new ChatServer('192.168.1.9:8080'));
 }
 
 $(document).on('ready', init);
+
+			

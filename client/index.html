@@ -1,12 +1,23 @@
 <html>
 	<head>
 		<title>pngr</title>
-    	<link href="css/bootstrap.min.css" rel="stylesheet">
-		<script src="js/socket.io.min.js"></script>
+
 		<script src="js/jquery-1.11.0.min.js"></script>
+    	
+    	<!-- bootstrap -->
+    	<link rel="stylesheet" href="css/bootstrap.min.css" type="text/css">
     	<script src="js/bootstrap.min.js"></script>
-		<script src="js/main.js"></script>
+
+		<!-- multiselect bootstrap addon -->
+		<link rel="stylesheet" href="css/bootstrap-multiselect.css" type="text/css"/>
+		<script type="text/javascript" src="js/bootstrap-multiselect.js"></script>
+		
+    	<!-- node-webkit addons -->
+		<script src="js/socket.io.min.js"></script>
 		<script src="js/nw-desktop-notifications.js"></script>
+
+		<!-- custom js -->
+		<script src="js/main.js"></script>
 	</head>
 	<body style="padding-top: 70px; padding-bottom: 70px;">
 		<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -14,7 +25,7 @@
 				<!-- Brand and toggle get grouped for better mobile display -->
 				<div class="navbar-header">
 					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#pngr-navbar-collapse">
-						<span class="sr-only">Toggle navigation</span>
+						<span class="sr-only">Toggle menu</span>
 						<span class="icon-bar"></span>
 						<span class="icon-bar"></span>
 						<span class="icon-bar"></span>
@@ -40,42 +51,14 @@
 			<div id="response"></div>
 			
 			<div id='status' style='display: none;'></div>
-
-			<div class="row">
-				<button type="button" class="btn btn-primary btn-lg btn-block">Send Message</button>
-			</div>
 		</div>
 
-		<nav class="navbar navbar-inverse navbar-fixed-bottom" role="navigation">
+		<nav class="navbar navbar-inverse navbar-fixed-bottom">
 			<div class="container-fluid">
 				<ul class="nav navbar-nav">
-					<li><a href="#"><center>Send Message</center></a></li>
+					<li id="sendmsg"><a href="#"><center>Send Message</center></a></li>
 				</ul>
 			</div>
 		</nav>
-		
-		<script>
-			var gui = require('nw.gui');
-			var win = gui.Window.get();
-			var tray = new gui.Tray({title: 'Tray Title', icon: 'img/icon.png'});
-			
-			var menu = new gui.Menu();
-			menu.append(new gui.MenuItem({ type: 'checkbox', label: 'box1' }));
-			menu.append(new gui.MenuItem({
-				label: 'Exit',
-				click: function() {
-					gui.App.quit();
-				}
-			}));
-			tray.menu = menu;
-			
-			tray.on('click', function() {
-				win.show();
-			});
-			
-			/*win.on('close', function() {
-				this.hide();
-			});*/	
-		</script>
 	</body>
 </html>
