@@ -1,4 +1,6 @@
-function ChatServer(url) {
+var gui = require('nw.gui');
+
+/*function ChatServer(url) {
 	var socket = io.connect(url);
 	var sessionId = '';
 	
@@ -23,15 +25,14 @@ function ChatServer(url) {
 			});
 		});
 	});
-}
+}*/
 
 function init() {
 /****
   Initialize node-webkit gui
 ****/
-	var gui = require('nw.gui');
 	var win = gui.Window.get();
-	win.resizeTo(300, 600);
+	win.resizeTo(320, 600);
 	var tray = new gui.Tray({title: 'Tray Title', icon: 'img/icon.png'});
 	
 	var menu = new gui.Menu();
@@ -51,11 +52,49 @@ function init() {
 /****
   Connect to servers
 ****/
-	var servers = new Array();
-	servers.push(new ChatServer('192.168.1.11:8080'));
+	//var servers = new Array();
+	//servers.push(new ChatServer('192.168.1.11:8080'));
 	//servers.push(new ChatServer('192.168.1.9:8080'));
 }
 
 $(document).on('ready', init);
 
-			
+function openSendMsg()
+{
+	var msgwin = gui.Window.get(
+		window.open('message.html')
+	);
+	msgwin.resizeTo(400, 502);
+}
+
+function openAcnts()
+{
+	var acntwin = gui.Window.get(
+		window.open('accounts.html')
+	);
+	acntwin.resizeTo(400, 400);
+}
+
+function openNewAcnt()
+{
+	var acntwin = gui.Window.get(
+		window.open('newaccount.html')
+	);
+	acntwin.resizeTo(300, 300);
+}
+
+function openStngs()
+{
+	var stngwin = gui.Window.get(
+		window.open('settings.html')
+	);
+	stngwin.resizeTo(400, 400);
+}
+
+function openJoin()
+{
+	var joinwin = gui.Window.get(
+		window.open('join.html')
+	);
+	joinwin.resizeTo(300, 200);
+}

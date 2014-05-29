@@ -7,10 +7,6 @@
     	<!-- bootstrap -->
     	<link rel="stylesheet" href="css/bootstrap.min.css" type="text/css">
     	<script src="js/bootstrap.min.js"></script>
-
-		<!-- multiselect bootstrap addon -->
-		<link rel="stylesheet" href="css/bootstrap-multiselect.css" type="text/css"/>
-		<script type="text/javascript" src="js/bootstrap-multiselect.js"></script>
 		
     	<!-- node-webkit addons -->
 		<script src="js/socket.io.min.js"></script>
@@ -36,27 +32,68 @@
 				<!-- Collect the nav links, forms, and other content for toggling -->
 				<div class="collapse navbar-collapse" id="pngr-navbar-collapse">
 					<ul class="nav navbar-nav">
-						<li><a href="#">Accounts</a></li>
-						<li><a href="#">Settings</a></li>
+						<li><a href="javascript:void(0)" onclick="openAcnts()">Accounts</a></li>
+						<li><a href="javascript:void(0)" onclick="openStngs()">Settings</a></li>
 					</ul>
 				</div><!-- /.navbar-collapse -->
 			</div><!-- /.container-fluid -->
 		</nav>
 
 		<div class="container">
-			<h2>Connection: </h2>
-			<div id="output"></div>
-			<br />
-			<h2>Response: </h2>
-			<div id="response"></div>
-			
-			<div id='status' style='display: none;'></div>
+			<div class="panel-group" id="message1">
+				<div class="panel panel-primary">
+					<div class="panel-heading" data-toggle="collapse" data-target="#demo1">
+						<h4 class="panel-title pull-left">
+						  Collapsible Group Item #1
+						</h4>
+						<button class="btn btn-default btn-xs pull-right">&#8203;<span class="glyphicon glyphicon-trash"></span></button>
+						<div class="clearfix"></div>
+					</div>
+					<div id="demo1" class="panel-collapse collapse in">
+						<div class="panel-body">
+							Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. 3 wolf moon officia aute, non cupidatat skateboard dolor brunch. Food truck quinoa nesciunt laborum eiusmod. Brunch 3 wolf moon tempor, sunt aliqua put a bird on it squid single-origin coffee nulla assumenda shoreditch et. Nihil anim keffiyeh helvetica, craft beer labore wes anderson cred nesciunt sapiente ea proident. Ad vegan excepteur butcher vice lomo. Leggings occaecat craft beer farm-to-table, raw denim aesthetic synth nesciunt you probably haven't heard of them accusamus labore sustainable VHS.
+						</div>
+					</div>
+					<div class="panel-footer">
+						<small>sender@server.com to #group</small>
+					</div>
+				</div>
+			</div>
+			<div class="panel-group" id="message2">
+				<div class="panel panel-primary">
+					<div class="panel-heading" data-toggle="collapse" data-target="#demo2">
+						<h4 class="panel-title pull-left">
+						  Collapsible Group Item #2
+						</h4>
+						<button class="btn btn-default btn-xs pull-right">&#8203;<span class="glyphicon glyphicon-trash"></span></button>
+						<div class="clearfix"></div>
+					</div>
+					<div id="demo2" class="panel-collapse collapse in">
+						<div class="panel-body">
+							Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. 3 wolf moon officia aute, non cupidatat skateboard dolor brunch. Food truck quinoa nesciunt laborum eiusmod. Brunch 3 wolf moon tempor, sunt aliqua put a bird on it squid single-origin coffee nulla assumenda shoreditch et. Nihil anim keffiyeh helvetica, craft beer labore wes anderson cred nesciunt sapiente ea proident. Ad vegan excepteur butcher vice lomo. Leggings occaecat craft beer farm-to-table, raw denim aesthetic synth nesciunt you probably haven't heard of them accusamus labore sustainable VHS.
+						</div>
+					</div>
+					<div class="panel-footer">
+						<small>sender@server.com to #group</small>
+					</div>
+				</div>
+			</div>
 		</div>
 
 		<nav class="navbar navbar-inverse navbar-fixed-bottom">
 			<div class="container-fluid">
-				<ul class="nav navbar-nav">
-					<li id="sendmsg"><a href="#"><center>Send Message</center></a></li>
+				<ul class="nav navbar-nav" style="margin: 0px; float: none; width: 100%"> 
+					<li id="joingroup" style="display: table-cell !important; width: 50%;">
+						<a href="javascript:void(0)" onclick="openJoin()">
+							<center>Join Group</center>
+						</a>
+					</li>
+					<li id="sendmsg" style="display: table-cell !important; width: 50%;">
+						<a href="javascript:void(0)" onclick="openSendMsg()">
+							<center>Send Message</center>
+						</a>
+					</li>
+					<div class="clearfix"></div>
 				</ul>
 			</div>
 		</nav>

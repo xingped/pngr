@@ -1,8 +1,75 @@
 <html>
 	<head>
 		<title>Accounts</title>
+		<script src="js/jquery-1.11.0.min.js"></script>
+    	
+    	<!-- bootstrap -->
+    	<link rel="stylesheet" href="css/bootstrap.min.css" type="text/css">
+    	<script src="js/bootstrap.min.js"></script>
+
+		<!-- custom js -->
+		<script src="js/accounts.js"></script>
 	</head>
 	<body>
-
+		<div class="container">
+			<center><h4 style="margin-bottom: 0px;"><strong>Accounts</strong></h4></center>
+			<center><small><small><em>Click on account to edit settings.</em></small></small></center>
+			<div class="well" style="background-color: white; padding: 10px; margin-top: 5px;">
+				<table class="table table-condensed table-hover">
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>Server</th>
+						<tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>
+								name1
+							</td>
+							<td>
+								server1.domain.com
+							</td>
+						</tr>
+						<tr>
+							<td>
+								name2
+							</td>
+							<td>
+								server2.domain.com
+							</td>
+						</tr><tr>
+							<td>
+								name3
+							</td>
+							<td>
+								server3.domain.com
+							</td>
+						</tr><tr>
+							<td>
+								name4
+							</td>
+							<td>
+								server4.domain.com
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<nav class="navbar navbar-inverse navbar-fixed-bottom">
+			<div class="container-fluid">
+				<ul class="nav navbar-nav">
+					<li id="sendmsg">
+						<a href="javascript:void(0)" onclick="openNewAcnt()">
+							<center>
+								<span class="glyphicon glyphicon-plus"></span>
+								Add New Account
+							</center>
+						</a>
+					</li>
+				</ul>
+			</div>
+		</nav>
 	</body>
 </html>
