@@ -39,5 +39,9 @@
 				<div class="clearfix"></div>
 			</form>
 		</div>
+
+		<script>
+			window.opener.window.opener.socket.emit('testfunc', {id: window.opener.window.opener.sessionId});
+		</script>
 	</body>
 </html>

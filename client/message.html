@@ -10,23 +10,29 @@
 		<!-- multiselect bootstrap addon -->
 		<script type="text/javascript" src="js/bootstrap-multiselect.js"></script>
 		<link rel="stylesheet" href="css/bootstrap-multiselect.css" type="text/css"/>
-
-    	<!-- node-webkit addons -->
-		<script src="js/socket.io.min.js"></script>
 	</head>
 	<body>
 		<div class="container" style="margin-top: 10px;">
 			<form role="form">
 				<div class="form-group">
-					<label for="broadcast">Broadcast:</label>
-					<select class="multiselect" multiple="multiple" id="broadcast">
-						<option value="server1">Server1</option>
-						<option value="server2">Server2</option>
-						<option value="server3">Server3</option>
-						<option value="server4">Server4</option>
-						<option value="server5">Server5</option>
-						<option value="server6">Server6</option>
-					</select>
+					<div class="row">
+						<div class="col-xs-2" style="padding-top: 7px;">
+							<label for="servers">Server</label>
+						</div>
+						<div class="col-xs-6">
+							<select id="servers" class="form-control multiselect"></select>
+						</div>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="row">
+						<div class="col-xs-2" style="padding-top: 7px;">
+							<label for="groups">Groups</label>
+						</div>
+						<div class="col-xs-6">
+							<select class="multiselect" multiple="multiple" id="groups"></select>
+						</div>
+					</div>
 				</div>
 				<div class="form-group">
 					<label for="subject">Subject</label>
@@ -36,16 +42,64 @@
 					<label for="message">Message</label>
 					<textarea class="form-control" id="message" cols="30" rows="12" placeholder="Message text..."></textarea>
 				</div>
-				<button type="submit" class="btn btn-success pull-left">Send</button>
-				<a class="btn btn-danger pull-right" href="javascript:void(0)" role="button">Cancel</a>
+				<button id="send" type="button" class="btn btn-success pull-left">Send</button>
+				<a id="cancel" class="btn btn-danger pull-right" href="javascript:void(0)" role="button">Cancel</a>
 				<div class="clearfix"></div>
 			</form>
+			<div id="error" class="alert alert-danger hidden"></div>
 		</div>
 
 		<script type="text/javascript">
-		  $(document).ready(function() {
-		    $('.multiselect').multiselect();
-		  });
+			$(document).ready(function() {
+				// list all servers
+				window.opener.servers.forEach(function(item) {
+					$('#servers').append('<option value="'+window.opener.servers.indexOf(item)+'">'+item.url+'</option>');
+				});
+
+				// When server selection changes, change group list
+				// Empty innerhtml, add new options, rebuild multiselect
+				$('#servers').multiselect({
+					onChange: function(element, checked) {
+						$('#groups').empty();
+						window.opener.servers[element.val()].groups.forEach(function(g) {
+							$('#groups').append('<option value="'+g+'">'+g+'</option>');
+						});
+						$('#groups').multiselect('rebuild');
+					}
+				});
+
+				// initialize the group list with the first server on the list
+				window.opener.servers[0].groups.forEach(function(item) {
+					$('#groups').append('<option value="'+item+'">'+item+'</option>');
+				});
+				$('#groups').multiselect();
+
+				// when the send button is pressed, try to send message
+				$('#send').click(function() {
+					window.opener.servers[$('#servers').val()].socket.emit('sendmsg', {
+						id: window.opener.servers[$('#servers').val()].sessionId, 
+						groups: $('#groups').val(), 
+						subject: $('#subject').val(), 
+						message: $('#message').val()
+					});
+				});
+
+				// Wait to see if message succeeded or if there was an error
+				window.opener.servers[$('servers').val()].socket.on('msgresponse', function(data) {
+					if (data.response === 'success') {
+						window.close();
+					} else {
+						$('#error').html(data.response);
+						$('#error').removeClass('hidden').addClass('show');
+						window.resizeTo(400, 650);
+					}
+				});
+
+				// Clicking the cancel button closes the window
+				$('#cancel').click(function() {
+					window.close();
+				});
+			});
 		</script>
 	</body>
 </html>

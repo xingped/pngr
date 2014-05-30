@@ -5,13 +5,14 @@ var express = require("express")
   , _ = require("underscore");
 
 //Server's IP address & port number
-app.set("ipaddr", "192.168.1.11");
+app.set("ipaddr", "127.0.0.1");
 app.set("port", 8080);
 
 io.on("connection", function(socket) {
 	socket.on("testfunc", function(data) {
-		var message = "response successful";
-		io.sockets.socket(data.id).emit("response", {message: message});
+		console.log("message received from " + data.id);
+		//var message = "response successful";
+		//io.sockets.socket(data.id).emit("response", {message: message});
 	});
 });
 

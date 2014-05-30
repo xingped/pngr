@@ -1,17 +1,23 @@
 var gui = require('nw.gui');
+var servers = new Array();
 
-/*function ChatServer(url) {
-	var socket = io.connect(url);
-	var sessionId = '';
+function ChatServer(url) {
+	var self = this;
+	this.url = url;
+	this.sessionId = '';
+	this.groups = new Array();
+
+	this.socket = io.connect(url);
 	
-	socket.on('connect', function() {
-		sessionId = socket.socket.sessionid;
-		$('#output').append(url+" SID: "+sessionId+"<br />");
-		socket.emit('testfunc', {id: sessionId});
+	this.socket.on('connect', function() {
+		self.sessionId = self.socket.socket.sessionid;
+		//$('#output').append(url+" SID: "+sessionId+"<br />");
+		self.socket.emit('testfunc', {id: self.sessionId});
+		console.log(self.sessionId);
 	});
 	
-	socket.on('response', function(data) {
-		$("#response").append(url+": "+data.message+"<br />");
+	/*socket.on('response', function(data) {
+		//$("#response").append(url+": "+data.message+"<br />");
 		
 		var icon = "img/desktop-notify.png";
 		var title = url;
@@ -24,8 +30,8 @@ var gui = require('nw.gui');
 				},1800);
 			});
 		});
-	});
-}*/
+	});*/
+}
 
 function init() {
 /****
@@ -52,9 +58,12 @@ function init() {
 /****
   Connect to servers
 ****/
-	//var servers = new Array();
-	//servers.push(new ChatServer('192.168.1.11:8080'));
-	//servers.push(new ChatServer('192.168.1.9:8080'));
+	servers.push(new ChatServer('127.0.0.1:8080'));
+	servers[0].groups.push('Sample1');
+	servers[0].groups.push('Sample2');
+	servers.push(new ChatServer('127.0.0.1:123456789'));
+	servers[1].groups.push('Sample3');
+	servers[1].groups.push('Sample4');
 }
 
 $(document).on('ready', init);
@@ -64,7 +73,7 @@ function openSendMsg()
 	var msgwin = gui.Window.get(
 		window.open('message.html')
 	);
-	msgwin.resizeTo(400, 502);
+	msgwin.resizeTo(400, 551);
 }
 
 function openAcnts()
