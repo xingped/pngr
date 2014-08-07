@@ -7,9 +7,12 @@ function ChatServer(url) {
 	this.sessionId = '';
 	this.groups = new Array();
 
-	this.socket = io.connect(url);
+	this.socket = io.connect(this.url);
+	this.connected = false;
+	this.disabled = false;
 	
 	this.socket.on('connect', function() {
+		self.connected = true;
 		self.sessionId = self.socket.socket.sessionid;
 		//$('#output').append(url+" SID: "+sessionId+"<br />");
 		self.socket.emit('testfunc', {id: self.sessionId});
@@ -56,14 +59,32 @@ function init() {
 	});
 
 /****
+  Load servers from file
+****/
+	var fs = require("fs");
+	var fileName = "test.txt";
+
+	var data = fs.readFileSync(fileName, 'utf8');
+	var obj = $.parseJSON(data);
+	$.each(obj.servers, function(i, item) {
+		//console.log(item.name + " " + item.address);
+		servers.push(new ChatServer(item.address));
+		
+		$.each(item.groups, function(g, group) {
+			//console.log(group.name);
+			servers[i].groups.push(group.name);
+		});
+	});
+
+/****
   Connect to servers
 ****/
-	servers.push(new ChatServer('127.0.0.1:8080'));
-	servers[0].groups.push('Sample1');
-	servers[0].groups.push('Sample2');
-	servers.push(new ChatServer('127.0.0.1:123456789'));
-	servers[1].groups.push('Sample3');
-	servers[1].groups.push('Sample4');
+	// Servers are connected when read from file
+
+/****
+
+****/
+
 }
 
 $(document).on('ready', init);
@@ -76,20 +97,20 @@ function openSendMsg()
 	msgwin.resizeTo(400, 551);
 }
 
-function openAcnts()
+function openAcntList()
 {
-	var acntwin = gui.Window.get(
-		window.open('accounts.html')
+	var acntlistwin = gui.Window.get(
+		window.open('accountlist.html')
 	);
-	acntwin.resizeTo(400, 400);
+	acntlistwin.resizeTo(400, 400);
 }
 
-function openNewAcnt()
+function openAcnt()
 {
 	var acntwin = gui.Window.get(
-		window.open('newaccount.html')
+		window.open('account.html')
 	);
-	acntwin.resizeTo(300, 300);
+	acntwin.resizeTo(300, 350);
 }
 
 function openStngs()

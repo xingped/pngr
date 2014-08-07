@@ -1,0 +1,20 @@
+{
+  "servers" : [
+    {
+      "name": "server1",
+      "address": "127.0.0.1:8080",
+      "groups": [
+        {"name": "s1group1"},
+        {"name": "s1group2"}
+      ]
+    },
+    {
+      "name": "server2",
+      "address": "127.0.0.1:123456789",
+      "groups": [
+        {"name": "s2group1"},
+        {"name": "s2group2"}
+      ]
+    }
+  ]
+}
