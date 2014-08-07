@@ -1,6 +1,6 @@
 <html>
 	<head>
-		<title>New Account</title>
+		<title>Account</title>
 		<script src="js/jquery-1.11.0.min.js"></script>
     	
     	<!-- bootstrap -->
@@ -34,14 +34,18 @@
 						<input type="text" class="form-control" id="port" placeholder="####">
 					</div>
 				</div>
-				<button type="submit" class="btn btn-success pull-left">Create</button>
+				<button type="button" class="btn btn-success pull-left">Save</button>
 				<a class="btn btn-danger pull-right" href="javascript:void(0)" role="button">Cancel</a>
 				<div class="clearfix"></div>
 			</form>
 		</div>
 
 		<script>
-			window.opener.window.opener.socket.emit('testfunc', {id: window.opener.window.opener.sessionId});
+			// if presented with id from accounts window, pre-fill information
+			// parse url for parameters
+			var params = window.location.href.split('?')[1];
+			if(params != null) var id = params.split('=')[1];
+			if(id != null) console.log(id);
 		</script>
 	</body>
 </html>

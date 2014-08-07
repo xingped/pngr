@@ -1,0 +1,95 @@
+<html>
+	<head>
+		<title>Account List</title>
+		<script src="js/jquery-1.11.0.min.js"></script>
+		
+		<!-- bootstrap -->
+		<link rel="stylesheet" href="css/bootstrap.min.css" type="text/css">
+		<script src="js/bootstrap.min.js"></script>
+
+		<!-- custom js -->
+		<!--<script src="js/accounts.js"></script>-->
+	</head>
+	<body>
+		<div class="container">
+			<center><h4 style="margin-bottom: 0px;"><strong>Account List</strong></h4></center>
+			<center><small><small><em>Click on account to edit settings.</em></small></small></center>
+			<div class="well" style="background-color: white; padding: 10px; margin-top: 5px;">
+				<table class="table table-condensed table-hover">
+					<thead>
+						<tr>
+							<th id="reconnect" style="padding-bottom: 1px;">
+								<center>&#8203;<span class="glyphicon glyphicon-refresh btn-sm"></span></center>
+							</th>
+							<th style="padding-bottom: 1px;">Name</th>
+							<th style="padding-bottom: 1px;">Server</th>
+						</tr>
+					</thead>
+					<tbody id="accounts">
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<nav class="navbar navbar-inverse navbar-fixed-bottom">
+			<div class="container-fluid">
+				<ul class="nav navbar-nav">
+					<li id="newaccount">
+						<a href="javascript:void(0)" onclick="">
+							<center>
+								<span class="glyphicon glyphicon-plus"></span>
+								Add New Account
+							</center>
+						</a>
+					</li>
+				</ul>
+			</div>
+		</nav>
+
+		<script>
+			$(document).ready(function() {
+				// List all saved accounts and their connection status
+				window.opener.servers.forEach(function(item) {
+					var row = '';
+					row += '<tr id="'+window.opener.servers.indexOf(item)+'">';
+					
+					if(item.connected) {
+						row += '<td name="status"><center><span class="glyphicon glyphicon-ok-circle"></span></center></td>';
+					} else if(!item.connected) {
+						row += '<td name="status"><center><span class="glyphicon glyphicon-remove-circle"></span></center></td>';
+					} else if(item.disabled) {
+						row += '<td name="status"><center><span class="glyphicon glyphicon-ban-circle"></span></center></td>';
+					}
+
+					var username = window.opener.servers.indexOf(item); // replace this later
+					row += '<td name="username">'+username+'</td>';
+
+					var server = item.url;
+					row += '<td name="server">'+server+'</td>';
+
+					row += '</tr>';
+
+					$('#accounts').append(row);
+				});
+				// Selector: $('#trid td[name=""]')
+
+				// Make refresh button attempt to reconnect disconnected accounts
+				$("#reconnect").click(function() {
+					window.opener.servers.forEach(function(item) {
+						if(!item.connected && !item.disabled) {
+							item.socket = window.opener.io.connect(item.url);
+							console.log('fired');
+						}
+					});
+				});
+
+				// On new account/account click, open account settings window
+				$('#newaccount').click(function() {
+					var acntwin = require('nw.gui').Window.get(
+						window.open('account.html')
+					);
+					acntwin.resizeTo(300, 350);
+				});
+			});
+		</script>
+	</body>
+</html>
