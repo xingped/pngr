@@ -1,24 +1,28 @@
 var gui = require('nw.gui');
 var servers = new Array();
 
-function ChatServer(url) {
+function ChatServer(url, groups) {
 	var self = this;
 	this.url = url;
 	this.sessionId = '';
-	this.groups = new Array();
+	this.groups = groups;
 
-	this.socket = io.connect(this.url);
+	this.socket = io.connect(url);
 	this.connected = false;
 	this.disabled = false;
 	
 	this.socket.on('connect', function() {
 		self.connected = true;
 		self.sessionId = self.socket.socket.sessionid;
-		//$('#output').append(url+" SID: "+sessionId+"<br />");
-		self.socket.emit('testfunc', {id: self.sessionId});
+		self.socket.emit('joinServer', {id: self.sessionId});
+		
+		$.each(self.groups, function(i, group) {
+			self.socket.emit('joinGroup', {id: self.sessionId, group: group});
+		});
+
 		console.log(self.sessionId);
 	});
-	
+
 	/*socket.on('response', function(data) {
 		//$("#response").append(url+": "+data.message+"<br />");
 		
@@ -35,6 +39,17 @@ function ChatServer(url) {
 		});
 	});*/
 }
+
+ChatServer.prototype.connect = function(group) {
+	this.socket = io.connect(this.url);
+};
+
+ChatServer.prototype.joinGroup = function(group) {
+	this.groups.push(group);
+	console.log(this.sessionId);
+	//this.socket.emit('joinGroup', {id: this.sessionId, group: group});
+	//console.log('[emit: joinGroup] - "' + group + '"');
+};
 
 function init() {
 /****
@@ -59,31 +74,24 @@ function init() {
 	});
 
 /****
-  Load servers from file
+  Load servers from file. Servers connect on creation.
 ****/
 	var fs = require("fs");
 	var fileName = "test.txt";
 
 	var data = fs.readFileSync(fileName, 'utf8');
 	var obj = $.parseJSON(data);
+	
 	$.each(obj.servers, function(i, item) {
-		//console.log(item.name + " " + item.address);
-		servers.push(new ChatServer(item.address));
-		
+		var groups = new Array();
 		$.each(item.groups, function(g, group) {
 			//console.log(group.name);
-			servers[i].groups.push(group.name);
+			groups.push(group.name);
 		});
+
+		servers.push(new ChatServer(item.address, groups));
+		
 	});
-
-/****
-  Connect to servers
-****/
-	// Servers are connected when read from file
-
-/****
-
-****/
 
 }
 

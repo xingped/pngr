@@ -14,6 +14,15 @@ io.on("connection", function(socket) {
 		//var message = "response successful";
 		//io.sockets.socket(data.id).emit("response", {message: message});
 	});
+
+	socket.on("joinServer", function(data) {
+		console.log("connection from " + data.id);
+	});
+
+	socket.on("joinGroup", function(data) {
+		socket.join(data.group);
+		console.log("joinGroup: " + data.id + ", " + data.group);
+	});
 });
 
 //Start the http server at port and IP defined before
