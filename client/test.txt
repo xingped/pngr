@@ -15,6 +15,22 @@
 					"name": "test"
 				}
 			]
+		},
+		{
+			"name": "server2",
+			"address": "127.0.0.1:8081",
+			"connect": true,
+			"groups": [
+				{
+					"name": "s1group1"
+				},
+				{
+					"name": "s1group2"
+				},
+				{
+					"name": "test"
+				}
+			]
 		}
 	]
 }

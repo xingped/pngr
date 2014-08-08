@@ -86,6 +86,7 @@
 
 				// Wait to see if message succeeded or if there was an error
 				window.opener.servers[$('#servers').val()].socket.on('msgResponse', function(data) {
+					console.log('msgRespone from ' + window.opener.servers[$('#servers').val()]);
 					if (data.response === 'success') {
 						window.close();
 					} else {

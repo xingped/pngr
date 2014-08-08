@@ -21,7 +21,7 @@
 							<th id="reconnect" style="padding-bottom: 1px;">
 								<center>&#8203;<span class="glyphicon glyphicon-refresh btn-sm"></span></center>
 							</th>
-							<th style="padding-bottom: 1px;">Name</th>
+							<th style="padding-bottom: 1px;">User</th>
 							<th style="padding-bottom: 1px;">Server</th>
 						</tr>
 					</thead>
@@ -63,7 +63,7 @@
 					var username = window.opener.servers.indexOf(item); // replace this later
 					row += '<td name="username">'+username+'</td>';
 
-					var server = item.url;
+					var server = item.name;
 					row += '<td name="server">'+server+'</td>';
 
 					row += '</tr>';
