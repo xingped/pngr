@@ -20,16 +20,11 @@
 			<form class="form-horizontal" role="form">
 				<div class="form-group">
 					<div class="col-xs-3">
-						<label for="server" class="control-label">Server</label>
+						<label for="serverlist" class="control-label">Server</label>
 					</div>
 					<div class="col-xs-9">
-						<select id="server" class="form-control">
-							<option value="server1">Server1</option>
-							<option value="server2">Server2</option>
-							<option value="server3">Server3</option>
-							<option value="server4">Server4</option>
-							<option value="server5">Server5</option>
-							<option value="server6">Server6</option>
+						<select id="serverlist" class="form-control">
+							<!-- List populated by javascript. -->
 						</select>
 					</div>
 				</div>
@@ -39,10 +34,34 @@
 						<input type="text" class="form-control" id="group" placeholder="Group Name">
 					</div>
 				</div>
-				<button type="submit" class="btn btn-success pull-left">Join</button>
-				<a class="btn btn-danger pull-right" href="javascript:void(0)" role="button">Cancel</a>
+				<button class="btn btn-success pull-left" onclick="joinGroup()">Join</button>
+				<button class="btn btn-danger pull-right" onclick="cancel()">Cancel</a>
 				<div class="clearfix"></div>
 			</form>
 		</div>
 	</body>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			// Populate server select
+			window.opener.servers.forEach(function(item) {
+				var options = '';
+				options += '<option value="'+window.opener.servers.indexOf(item)+'">';
+				options += item.name;
+				options += '</option>';
+
+				$('#serverlist').append(options);
+			});
+		});
+
+		function joinGroup() {
+			// Join group on the server
+			window.opener.servers[$('#serverlist').val()].joinGroup($('#group').val());
+			// Group will be saved from main window if join is successful
+			window.close();
+		}
+
+		function cancel() {
+			window.close();
+		}
+	</script>
 </html>

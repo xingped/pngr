@@ -1,8 +1,10 @@
 var gui = require('nw.gui');
+var fs = require("fs");
 var servers = new Array();
 
-function ChatServer(url, groups) {
+function ChatServer(name, url, groups) {
 	var self = this;
+	this.name = name;
 	this.url = url;
 	this.sessionId = '';
 	this.groups = groups;
@@ -21,6 +23,36 @@ function ChatServer(url, groups) {
 		});
 
 		console.log(self.sessionId);
+	});
+
+	// Server response from trying to join group
+	this.socket.on('joinGroupResponse', function(data) {
+		if(data.result != 'true')
+		{
+			// Display popup with reason for group join failure
+			var w = gui.Window.get(window.open());
+			w.resizeTo(100, 200);
+			wHtml = '<html><body><center><h4>' + data.result + '</h4><br />';
+			wHtml += '<button class="btn btn-default" onclick="window.close();">OK</button></center></body></html>';
+			w.html(wHtml);
+		}
+		else if(data.result == 'true')
+		{
+			console.log('group index: ' + self.groups.indexOf(data.group));
+			if(self.groups.indexOf(data.group) < 0) {
+				// If the group is not already in the list, it's not in the JSON file and we need to put it there
+				var fileData = fs.readFileSync('test.txt');
+				var jsonData = $.parseJSON(fileData);
+				
+				jsonData.servers[servers.indexOf(self)].groups.push({"name": data.group});
+
+				fs.writeFileSync('test.txt', JSON.stringify(jsonData, null, '\t'));
+				console.log('joinGroup ' + data.group + ' success, added');
+			} else {
+				// If the group is in the list, it's in the file, continue as normal
+				console.log('joinGroup ' + data.group + ' success, no add');
+			}
+		}
 	});
 
 	/*socket.on('response', function(data) {
@@ -45,10 +77,8 @@ ChatServer.prototype.connect = function(group) {
 };
 
 ChatServer.prototype.joinGroup = function(group) {
-	this.groups.push(group);
-	console.log(this.sessionId);
-	//this.socket.emit('joinGroup', {id: this.sessionId, group: group});
-	//console.log('[emit: joinGroup] - "' + group + '"');
+	this.socket.emit('joinGroup', {id: this.sessionId, group: group});
+	console.log('joinGroup: ' + this.sessionId + ' ' + group);
 };
 
 function init() {
@@ -76,10 +106,7 @@ function init() {
 /****
   Load servers from file. Servers connect on creation.
 ****/
-	var fs = require("fs");
-	var fileName = "test.txt";
-
-	var data = fs.readFileSync(fileName, 'utf8');
+	var data = fs.readFileSync('test.txt');
 	var obj = $.parseJSON(data);
 	
 	$.each(obj.servers, function(i, item) {
@@ -89,7 +116,7 @@ function init() {
 			groups.push(group.name);
 		});
 
-		servers.push(new ChatServer(item.address, groups));
+		servers.push(new ChatServer(item.name, item.address, groups));
 		
 	});
 

@@ -20,8 +20,13 @@ io.on("connection", function(socket) {
 	});
 
 	socket.on("joinGroup", function(data) {
+		
+		/****** TODO: validate if user is allowed to join group **********/
+		/* also check and respond if user is already in group */
+
 		socket.join(data.group);
 		console.log("joinGroup: " + data.id + ", " + data.group);
+		socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
 	});
 });
 
