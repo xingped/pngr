@@ -27,18 +27,16 @@ function ChatServer(name, url, groups) {
 
 	// Server response from trying to join group
 	this.socket.on('joinGroupResponse', function(data) {
-		if(data.result != 'true')
-		{
+		if(data.result != 'true') {
 			// Display popup with reason for group join failure
 			var w = gui.Window.get(window.open());
 			w.resizeTo(100, 200);
 			wHtml = '<html><body><center><h4>' + data.result + '</h4><br />';
 			wHtml += '<button class="btn btn-default" onclick="window.close();">OK</button></center></body></html>';
 			w.html(wHtml);
-		}
-		else if(data.result == 'true')
-		{
+		} else if(data.result == 'true') {
 			console.log('group index: ' + self.groups.indexOf(data.group));
+			
 			if(self.groups.indexOf(data.group) < 0) {
 				// If the group is not already in the list, it's not in the JSON file and we need to put it there
 				var fileData = fs.readFileSync('test.txt');
@@ -53,6 +51,28 @@ function ChatServer(name, url, groups) {
 				console.log('joinGroup ' + data.group + ' success, no add');
 			}
 		}
+	});
+
+	this.socket.on('newMsg', function(data) {
+		var msgHtml = '';
+		msgHtml += '<div class="panel-group" id="' + data.group + data.time + 'group">';
+		msgHtml += '	<div class="panel panel-primary">';
+		msgHtml += '		<div class="panel-heading" data-toggle="collapse" data-target="#' + data.group + data.time + 'msg">';
+		msgHtml += '			<h4 class="panel-title pull-left">' + data.subject + '</h4>';
+		msgHtml += '			<button class="btn btn-default btn-xs pull-right">&#8203;<span class="glyphicon glyphicon-trash"></span></button>';
+		msgHtml += '		<div class="clearfix"></div>';
+		msgHtml += '	</div>';
+		msgHtml += '	<div id="' + data.group + data.time + 'msg" class="panel-collapse collapse in">';
+		msgHtml += '			<div class="panel-body">' + data.message + '</div>';
+		msgHtml += '		</div>';
+		msgHtml += '		<div class="panel-footer">';
+		msgHtml += '			<small>' + data.id + ' to ' + data.group + '</small>';
+		msgHtml += '		</div>';
+		msgHtml += '	</div>';
+		msgHtml += '</div>';
+		
+
+		$('#messages').prepend(msgHtml);
 	});
 
 	/*socket.on('response', function(data) {
@@ -129,7 +149,7 @@ function openSendMsg()
 	var msgwin = gui.Window.get(
 		window.open('message.html')
 	);
-	msgwin.resizeTo(400, 551);
+	msgwin.resizeTo(400, 600);
 }
 
 function openAcntList()
@@ -161,5 +181,5 @@ function openJoin()
 	var joinwin = gui.Window.get(
 		window.open('join.html')
 	);
-	joinwin.resizeTo(300, 200);
+	joinwin.resizeTo(300, 230);
 }

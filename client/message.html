@@ -53,7 +53,7 @@
 			$(document).ready(function() {
 				// list all servers
 				window.opener.servers.forEach(function(item) {
-					$('#servers').append('<option value="'+window.opener.servers.indexOf(item)+'">'+item.url+'</option>');
+					$('#servers').append('<option value="'+window.opener.servers.indexOf(item)+'">'+item.name+'</option>');
 				});
 
 				// When server selection changes, change group list
@@ -76,7 +76,7 @@
 
 				// when the send button is pressed, try to send message
 				$('#send').click(function() {
-					window.opener.servers[$('#servers').val()].socket.emit('sendmsg', {
+					window.opener.servers[$('#servers').val()].socket.emit('sendMsg', {
 						id: window.opener.servers[$('#servers').val()].sessionId, 
 						groups: $('#groups').val(), 
 						subject: $('#subject').val(), 
@@ -85,7 +85,7 @@
 				});
 
 				// Wait to see if message succeeded or if there was an error
-				window.opener.servers[$('#servers').val()].socket.on('msgresponse', function(data) {
+				window.opener.servers[$('#servers').val()].socket.on('msgResponse', function(data) {
 					if (data.response === 'success') {
 						window.close();
 					} else {
