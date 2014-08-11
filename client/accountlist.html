@@ -48,9 +48,9 @@
 		<script>
 			$(document).ready(function() {
 				// List all saved accounts and their connection status
-				window.opener.servers.forEach(function(item) {
+				window.opener.accounts.forEach(function(item) {
 					var row = '';
-					row += '<tr id="'+window.opener.servers.indexOf(item)+'">';
+					row += '<tr id="'+window.opener.accounts.indexOf(item)+'">';
 					
 					if(item.connected) {
 						row += '<td name="status"><center><span class="glyphicon glyphicon-ok-circle"></span></center></td>';
@@ -60,10 +60,10 @@
 						row += '<td name="status"><center><span class="glyphicon glyphicon-ban-circle"></span></center></td>';
 					}
 
-					var username = window.opener.servers.indexOf(item); // replace this later
+					var username = item.username; // replace this later
 					row += '<td name="username">'+username+'</td>';
 
-					var server = item.name;
+					var server = item.server;
 					row += '<td name="server">'+server+'</td>';
 
 					row += '</tr>';
@@ -74,9 +74,9 @@
 
 				// Make refresh button attempt to reconnect disconnected accounts
 				$("#reconnect").click(function() {
-					window.opener.servers.forEach(function(item) {
+					window.opener.accounts.forEach(function(item) {
 						if(!item.connected && !item.disabled) {
-							item.socket = window.opener.io.connect(item.url);
+							item.socket = window.opener.io.connect(item.server);
 							console.log('fired');
 						}
 					});

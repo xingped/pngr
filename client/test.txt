@@ -1,9 +1,9 @@
 {
-	"servers": [
+	"accounts": [
 		{
-			"name": "server1",
-			"address": "127.0.0.1:8080",
-			"connect": true,
+			"username": "test",
+			"password": "passw0rd",
+			"server": "127.0.0.1:8080",
 			"groups": [
 				{
 					"name": "s1group1"
@@ -17,18 +17,15 @@
 			]
 		},
 		{
-			"name": "server2",
-			"address": "127.0.0.1:8081",
-			"connect": true,
+			"username": "test2",
+			"password": "passw0rd",
+			"server": "127.0.0.1:8081",
 			"groups": [
 				{
-					"name": "s1group1"
+					"name": "s2group1"
 				},
 				{
-					"name": "s1group2"
-				},
-				{
-					"name": "test"
+					"name": "s2group2"
 				}
 			]
 		}

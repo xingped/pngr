@@ -43,10 +43,10 @@
 	<script type="text/javascript">
 		$(document).ready(function() {
 			// Populate server select
-			window.opener.servers.forEach(function(item) {
+			window.opener.accounts.forEach(function(item) {
 				var options = '';
-				options += '<option value="'+window.opener.servers.indexOf(item)+'">';
-				options += item.name;
+				options += '<option value="'+window.opener.accounts.indexOf(item)+'">';
+				options += item.username + " [" + item.server + "]";
 				options += '</option>';
 
 				$('#serverlist').append(options);
@@ -55,7 +55,7 @@
 
 		function joinGroup() {
 			// Join group on the server
-			window.opener.servers[$('#serverlist').val()].joinGroup($('#group').val());
+			window.opener.accounts[$('#serverlist').val()].joinGroup($('#group').val());
 			// Group will be saved from main window if join is successful
 			window.close();
 		}

@@ -51,9 +51,9 @@
 
 		<script type="text/javascript">
 			$(document).ready(function() {
-				// list all servers
-				window.opener.servers.forEach(function(item) {
-					$('#servers').append('<option value="'+window.opener.servers.indexOf(item)+'">'+item.name+'</option>');
+				// list all accounts
+				window.opener.accounts.forEach(function(item) {
+					$('#servers').append('<option value="'+window.opener.accounts.indexOf(item)+'">'+item.username+' ['+item.server+']</option>');
 				});
 
 				// When server selection changes, change group list
@@ -61,7 +61,7 @@
 				$('#servers').multiselect({
 					onChange: function(element, checked) {
 						$('#groups').empty();
-						window.opener.servers[element.val()].groups.forEach(function(g) {
+						window.opener.accounts[element.val()].groups.forEach(function(g) {
 							$('#groups').append('<option value="'+g+'">'+g+'</option>');
 						});
 						$('#groups').multiselect('rebuild');
@@ -69,15 +69,15 @@
 				});
 
 				// initialize the group list with the first server on the list
-				window.opener.servers[0].groups.forEach(function(item) {
+				window.opener.accounts[0].groups.forEach(function(item) {
 					$('#groups').append('<option value="'+item+'">'+item+'</option>');
 				});
 				$('#groups').multiselect();
 
 				// when the send button is pressed, try to send message
 				$('#send').click(function() {
-					window.opener.servers[$('#servers').val()].socket.emit('sendMsg', {
-						id: window.opener.servers[$('#servers').val()].sessionId, 
+					window.opener.accounts[$('#servers').val()].socket.emit('sendMsg', {
+						id: window.opener.accounts[$('#servers').val()].sessionId, 
 						groups: $('#groups').val(), 
 						subject: $('#subject').val(), 
 						message: $('#message').val()
@@ -85,8 +85,8 @@
 				});
 
 				// Wait to see if message succeeded or if there was an error
-				window.opener.servers[$('#servers').val()].socket.on('msgResponse', function(data) {
-					console.log('msgRespone from ' + window.opener.servers[$('#servers').val()]);
+				window.opener.accounts[$('#servers').val()].socket.on('msgResponse', function(data) {
+					console.log('msgRespone from ' + window.opener.accounts[$('#servers').val()]);
 					if (data.response === 'success') {
 						window.close();
 					} else {

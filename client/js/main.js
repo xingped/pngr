@@ -1,15 +1,15 @@
 var gui = require('nw.gui');
 var fs = require("fs");
-var servers = new Array();
+var accounts = new Array();
 
-function ChatServer(name, url, groups) {
+function ChatServer(username, password, server, groups) {
 	var self = this;
-	this.name = name;
-	this.url = url;
+	this.username = username;
+	this.server = server;
 	this.sessionId = '';
 	this.groups = groups;
 
-	this.socket = io.connect(url);
+	this.socket = io.connect(server);
 	this.connected = false;
 	this.disabled = false;
 	
@@ -42,7 +42,7 @@ function ChatServer(name, url, groups) {
 				var fileData = fs.readFileSync('test.txt');
 				var jsonData = $.parseJSON(fileData);
 				
-				jsonData.servers[servers.indexOf(self)].groups.push({"name": data.group});
+				jsonData.accounts[accounts.indexOf(self)].groups.push({"name": data.group});
 
 				fs.writeFileSync('test.txt', JSON.stringify(jsonData, null, '\t'));
 				console.log('joinGroup ' + data.group + ' success, added');
@@ -53,6 +53,7 @@ function ChatServer(name, url, groups) {
 		}
 	});
 
+	// Add a new message panel on the main screen when a message is received
 	this.socket.on('newMsg', function(data) {
 		var msgHtml = '';
 		msgHtml += '<div class="panel-group" id="' + data.group + data.time + 'group">';
@@ -124,19 +125,19 @@ function init() {
 	});
 
 /****
-  Load servers from file. Servers connect on creation.
+  Load accounts from file. Accounts connect on creation.
 ****/
 	var data = fs.readFileSync('test.txt');
 	var obj = $.parseJSON(data);
 	
-	$.each(obj.servers, function(i, item) {
+	$.each(obj.accounts, function(i, item) {
 		var groups = new Array();
 		$.each(item.groups, function(g, group) {
 			//console.log(group.name);
 			groups.push(group.name);
 		});
 
-		servers.push(new ChatServer(item.name, item.address, groups));
+		accounts.push(new ChatServer(item.username, item.password, item.server, groups));
 		
 	});
 
