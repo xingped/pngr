@@ -8,30 +8,51 @@
     	<script src="js/bootstrap.min.js"></script>
 	</head>
 	<body>
-		<div class="container" style="margin: 20px; margin-bottom: 0px;">
-			<form class="form-horizontal" role="form">
-				<div class="form-group">
-					<label for="username" class="col-xs-4 control-label">Username</label>
-					<div class="col-xs-8">
-						<input type="text" class="form-control" id="username" placeholder="username">
+		<div class="container" style="margin: 10px; margin-bottom: 0px;">
+			<form class="form-horizontal">
+				<div class="row" style="margin-bottom: 15px;">
+					<div class="col-xs-3">
+						<label class="control-label">Username</label>
+					</div>
+					<div class="col-xs-9">
+						<div class="input-group" style="width: 100%;">
+							<input type="text" class="form-control" id="username" placeholder="username">
+						</div>
 					</div>
 				</div>
-				<div class="form-group">
-					<label for="password" class="col-xs-4 control-label">Password</label>
-					<div class="col-xs-8">
-						<input type="password" class="form-control" id="password" placeholder="password">
+				<div class="row" style="margin-bottom: 15px;">
+					<div class="col-xs-3">
+						<label class="control-label">Password</label>
+					</div>
+					<div class="col-xs-9">
+						<div class="input-group" style="width: 100%;">
+							<input type="text" class="form-control" id="password" placeholder="password">
+							<span class="input-group-btn">
+								<button type="button" class="btn btn-default">
+									&#8203;<span class="glyphicon glyphicon-transfer"></span>
+								</button>
+							</span>
+						</div>
 					</div>
 				</div>
-				<div class="form-group">
-					<label for="server" class="col-xs-4 control-label">Server</label>
-					<div class="col-xs-8">
-						<input type="text" class="form-control" id="server" placeholder="URL or IP">
+				<div class="row" style="margin-bottom: 15px;">
+					<div class="col-xs-3">
+						<label class="control-label">Server</label>
+					</div>
+					<div class="col-xs-9">
+						<div class="input-group" style="width: 100%;">
+							<input type="text" class="form-control" id="server" placeholder="server">
+						</div>
 					</div>
 				</div>
-				<div class="form-group">
-					<label for="port" class="col-xs-4 control-label">Port</label>
-					<div class="col-xs-8">
-						<input type="text" class="form-control" id="port" placeholder="####">
+				<div class="row" style="margin-bottom: 15px;">
+					<div class="col-xs-3">
+						<label class="control-label">Port</label>
+					</div>
+					<div class="col-xs-9">
+						<div class="input-group" style="width: 100%;">
+							<input type="text" class="form-control" id="port" placeholder="####">
+						</div>
 					</div>
 				</div>
 				<button type="button" class="btn btn-success pull-left">Save</button>
