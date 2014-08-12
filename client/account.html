@@ -26,9 +26,9 @@
 					</div>
 					<div class="col-xs-9">
 						<div class="input-group" style="width: 100%;">
-							<input type="text" class="form-control" id="password" placeholder="password">
-							<span class="input-group-btn">
-								<button type="button" class="btn btn-default">
+							<input id="password" type="text" class="form-control" placeholder="password">
+							<span id="changepassbtn" class="input-group-btn hidden">
+								<button id="changepass" type="button" class="btn btn-default">
 									&#8203;<span class="glyphicon glyphicon-transfer"></span>
 								</button>
 							</span>
@@ -41,7 +41,7 @@
 					</div>
 					<div class="col-xs-9">
 						<div class="input-group" style="width: 100%;">
-							<input type="text" class="form-control" id="server" placeholder="server">
+							<input id="server" type="text" class="form-control" placeholder="server">
 						</div>
 					</div>
 				</div>
@@ -51,22 +51,67 @@
 					</div>
 					<div class="col-xs-9">
 						<div class="input-group" style="width: 100%;">
-							<input type="text" class="form-control" id="port" placeholder="####">
+							<input id="port" type="text" class="form-control" placeholder="####">
 						</div>
 					</div>
 				</div>
-				<button type="button" class="btn btn-success pull-left">Save</button>
-				<a class="btn btn-danger pull-right" href="javascript:void(0)" role="button">Cancel</a>
+				<button id="save" type="button" class="btn btn-success pull-left">Save</button>
+				<a id="cancel" class="btn btn-danger pull-right" href="javascript:void(0)" role="button">Cancel</a>
 				<div class="clearfix"></div>
 			</form>
 		</div>
 
 		<script>
-			// if presented with id from accounts window, pre-fill information
-			// parse url for parameters
-			var params = window.location.href.split('?')[1];
-			if(params != null) var id = params.split('=')[1];
-			if(id != null) console.log(id);
+			$(document).on('ready', function() {
+				// if presented with id from accounts window, pre-fill information
+				// parse url for parameters
+				var params = window.location.href.split('?')[1];
+				var id = '';
+				
+				if(params != null) {
+					id = params.split('=')[1];
+					
+					if(id != '') {
+						// Fill information and show change password button
+						console.log(id);
+						$('#username').val(window.opener.window.opener.accounts[id].username);
+						$('#password').val(window.opener.window.opener.accounts[id].password);
+						$('#server').val(window.opener.window.opener.accounts[id].server);
+						$('#changepassbtn').removeClass('hidden');
+					}
+				}				
+
+				$('#changepass').click(function() {
+					var passwin = require('nw.gui').Window.get(
+						window.open('changepass.html?id='+id)
+					);
+					passwin.resizeTo(400, 300);
+				});
+
+				$('#save').click(function() {
+					var fs = require('fs');
+					var fileData = fs.readFileSync('test.txt');
+					var jsonData = $.parseJSON(fileData);
+
+					if(id != '') {
+						var newId = window.opener.window.opener.accounts.length;
+						jsonData.accounts[newId].username = $('#username').val();
+						jsonData.password[newId].password = $('#password').val();
+						jsonData.server[newId].server = $('#server').val();
+					} else {
+						jsonData.accounts[id].username = $('#username').val();
+						jsonData.server[id].server = $('#server').val();
+					}
+
+					fs.writeFileSync('test.txt', JSON.stringify(jsonData, null, '\t'));
+
+					window.close();
+				});
+
+				$('#cancel').click(function() {
+					window.close();
+				});
+			});
 		</script>
 	</body>
 </html>

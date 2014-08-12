@@ -50,7 +50,8 @@
 				// List all saved accounts and their connection status
 				window.opener.accounts.forEach(function(item) {
 					var row = '';
-					row += '<tr id="'+window.opener.accounts.indexOf(item)+'">';
+					var id = window.opener.accounts.indexOf(item);
+					row += '<tr id="'+id+'" onclick="openAcnt('+id+');">';
 					
 					if(item.connected) {
 						row += '<td name="status"><center><span class="glyphicon glyphicon-ok-circle"></span></center></td>';
@@ -90,6 +91,13 @@
 					acntwin.resizeTo(400, 350);
 				});
 			});
+
+			function openAcnt(id) {
+				var acntwin = require('nw.gui').Window.get(
+					window.open('account.html?id='+id)
+				);
+				acntwin.resizeTo(400, 350);
+			}
 		</script>
 	</body>
 </html>

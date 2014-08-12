@@ -5,6 +5,7 @@ var accounts = new Array();
 function ChatServer(username, password, server, groups) {
 	var self = this;
 	this.username = username;
+	this.password = password;
 	this.server = server;
 	this.sessionId = '';
 	this.groups = groups;
@@ -140,7 +141,7 @@ function init() {
 		accounts.push(new ChatServer(item.username, item.password, item.server, groups));
 		
 	});
-
+	//console.log(accounts.length);
 }
 
 $(document).on('ready', init);
