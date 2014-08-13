@@ -55,39 +55,35 @@
 		<script>
 			$(document).on('ready', function() {
 				var main = window.opener.window.opener.window.opener;
+				var regconn = io.connect(window.opener.$('#server').val());
+				
+				regconn.on('connect', function() {
+					console.log('reg connected');
+				});
+				
+				regconn.on('regresponse', function(data) {
+					if(data.response === 'success') {
+						window.opener.$('#password').val($('#confirmpass').val());
+						window.opener.$('#register').removeClass('hidden');
+						alert('You are now registered with the server.');
+						window.close();
+					} else {
+						alert(data.response);
+					}
+				});
 
 				$('#register').click(function() {
+					if(!regconn.socket.connected) {
+						alert('No server connection');
+					}
 					// check password, open connection to server for registration
 					// on success, remove registration button on parent window and close window
 					// user must save account after registering
-					if($('#newpass').val() !== $('#confirmpass').val()) {
+					else if($('#newpass').val() !== $('#confirmpass').val()) {
 						alert('Your new passwords do not match.');
 					} else {
 						console.log('Attempting registration.');
-						var accesscode = $('#accesscode').val();
-						console.log('Access code: ' + accesscode);
-						var user = window.opener.$('#username').val();
-						console.log('User: ' + user);
-						var password = $('#confirmpass').val();
-						console.log('Password: ' + password);
-						var server = window.opener.$('#server').val();
-						console.log('Server: ' + server);
-						var regconn = io.connect(server);
-						
-						regconn.on('connect', function() {
-							regconn.emit('register', {id: regconn.socket.sessionid, accesscode: accesscode, user: user, password: password});
-							console.log('reg connected');
-						});
-
-						regconn.on('regresponse', function(data) {
-							if(data.response === 'success') {
-								window.opener.$('#password').val(password);
-								alert('You are now registered with the server.');
-								window.close();
-							} else {
-								alert(data.response);
-							}
-						});
+						regconn.emit('register', {id: regconn.socket.sessionid, code: $('#accesscode').val(), user: window.opener.$('#username').val(), pass: $('#confirmpass').val()});
 					}
 				});
 

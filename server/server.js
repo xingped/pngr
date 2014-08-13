@@ -21,6 +21,23 @@ io.on("connection", function(socket) {
 	});
 
 	socket.on("joinServer", function(data) {
+		// Search for user in database
+		db.serialize(function() {
+			console.log('checking user credentials');
+			var stmt = db.get("SELECT rowid, username, password FROM users WHERE username=$user AND password=$pass;", {
+				$user: data.username,
+				$pass: data.password
+			}, function(err, row) {
+				// Disconnect user if username or password incorrect
+				if(row === undefined || row === null) {
+					console.log('no user, disconnecting');
+					socket.disconnect(true);
+				} else if(row.username !== data.username || row.password !== data.password) {
+					console.log('bad credentials, disconnecting');
+					socket.disconnect(true);
+				}
+			});
+		});
 		console.log("connection from " + data.id);
 	});
 
@@ -47,12 +64,16 @@ io.on("connection", function(socket) {
 	socket.on("register", function(data) {
 		var accesscode = "actest";
 
-		if(data.accesscode === accesscode) {
+		if(data.code === accesscode) {
 			// Insert user into database
 			db.serialize(function() {
-			  db.run("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT, code TEXT);");
+				db.run("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT, code TEXT);");
 
-			  var stmt = db.run("INSERT INTO users VALUES ("+data.username+", "+data.password+", "+data.accesscode+");");
+				var stmt = db.run("INSERT INTO users VALUES ($user, $pass, $code);", {
+					$user: data.user,
+					$pass: data.pass,
+					$code: data.code
+				});
 			});
 
 			// Respond to client
