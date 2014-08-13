@@ -11,11 +11,9 @@ function ChatServer(username, password, server, groups) {
 	this.groups = groups;
 
 	this.socket = io.connect(server);
-	this.connected = false;
 	this.disabled = false;
 	
 	this.socket.on('connect', function() {
-		self.connected = true;
 		self.sessionId = self.socket.socket.sessionid;
 		self.socket.emit('joinServer', {id: self.sessionId, username: self.username, password: self.password});
 		

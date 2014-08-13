@@ -84,9 +84,9 @@
 					var id = window.opener.accounts.indexOf(item);
 					row += '<tr id="'+id+'" onclick="openAcnt('+id+');">';
 					
-					if(item.connected) {
+					if(item.socket.socket.connected) {
 						row += '<td name="status"><center><span class="glyphicon glyphicon-ok-circle"></span></center></td>';
-					} else if(!item.connected) {
+					} else if(!item.socket.socket.connected) {
 						row += '<td name="status"><center><span class="glyphicon glyphicon-remove-circle"></span></center></td>';
 					} else if(item.disabled) {
 						row += '<td name="status"><center><span class="glyphicon glyphicon-ban-circle"></span></center></td>';
