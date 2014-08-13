@@ -1,0 +1,79 @@
+<html>
+	<head>
+		<title>Change Password</title>
+		<script src="js/jquery-1.11.0.min.js"></script>
+    	
+    	<!-- bootstrap -->
+    	<link rel="stylesheet" href="css/bootstrap.min.css" type="text/css">
+    	<script src="js/bootstrap.min.js"></script>
+	</head>
+	<body>
+		<div class="container" style="margin: 10px; margin-bottom: 0px;">
+			<form class="form-horizontal">
+				<div class="row" style="margin-bottom: 15px;">
+					<div class="col-xs-5">
+						<label class="control-label">Old Password</label>
+					</div>
+					<div class="col-xs-7">
+						<div class="input-group" style="width: 100%;">
+							<input id="oldpass" type="text" class="form-control" placeholder="Old Password">
+						</div>
+					</div>
+				</div>
+				<div class="row" style="margin-bottom: 15px;">
+					<div class="col-xs-5">
+						<label class="control-label">New Password</label>
+					</div>
+					<div class="col-xs-7">
+						<div class="input-group" style="width: 100%;">
+							<input id="newpass" type="text" class="form-control" placeholder="New Password">
+						</div>
+					</div>
+				</div>
+				<div class="row" style="margin-bottom: 15px;">
+					<div class="col-xs-5">
+						<label class="control-label">Confirm Password</label>
+					</div>
+					<div class="col-xs-7">
+						<div class="input-group" style="width: 100%;">
+							<input id="confirmpass" type="text" class="form-control" placeholder="Confirm Password">
+						</div>
+					</div>
+				</div>
+				<button id="save" type="button" class="btn btn-success pull-left">Save</button>
+				<a id="cancel" class="btn btn-danger pull-right" href="javascript:void(0)" role="button">Cancel</a>
+				<div class="clearfix"></div>
+			</form>
+		</div>
+
+		<script>
+			$(document).on('ready', function() {
+				var id = window.location.href.split('?')[1].split('=')[1];
+
+				$('#save').click(function() {
+					var fs = require('fs');
+					var fileData = fs.readFileSync('test.txt');
+					var jsonData = $.parseJSON(fileData);
+
+					// Verify password change requirements are met
+					if(jsonData.accounts[id].password === $('#oldpass').val() && $('#newpass').val() === $('#confirmpass').val()) {
+						// Save to accounts array and accounts file and change account window password
+						jsonData.accounts[id].password = $('#confirmpass').val();
+						window.opener.window.opener.window.opener.accounts[id].password = $('#confirmpass');
+						fs.writeFileSync('test.txt', JSON.stringify(jsonData, null, '\t'));
+						$(window.opener.document).find('#password').val($('#confirmpass').val());
+						window.close();
+					} else if(jsonData.accounts[id].password !== $('#oldpass').val()) {
+						alert('Your old password does not match.');
+					} else if($('#newpass').val() !== $('#confirmpass').val()) {
+						alert('Your new passwords do not match.');
+					}
+				});
+
+				$('#cancel').click(function() {
+					window.close();
+				});
+			});
+		</script>
+	</body>
+</html>
