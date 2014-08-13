@@ -55,8 +55,9 @@
 						</div>
 					</div>
 				</div>
-				<button id="save" type="button" class="btn btn-success pull-left">Save</button>
-				<a id="cancel" class="btn btn-danger pull-right" href="javascript:void(0)" role="button">Cancel</a>
+				<button id="cancel" class="btn btn-danger pull-left">Cancel</button>
+				<button id="save" type="button" class="btn btn-success pull-right">Save</button>
+				<center><button id="register" type="button" class="btn btn-primary hidden">Register</button></center>
 				<div class="clearfix"></div>
 			</form>
 		</div>
@@ -65,6 +66,7 @@
 			$(document).on('ready', function() {
 				// if presented with id from accounts window, pre-fill information
 				// parse url for parameters
+				var mainwin = window.opener.window.opener;
 				var params = window.location.href.split('?')[1];
 				var id = '';
 				
@@ -74,12 +76,14 @@
 					if(id != '') {
 						// Fill information and show change password button
 						console.log(id);
-						$('#username').val(window.opener.window.opener.accounts[id].username);
-						$('#password').val(window.opener.window.opener.accounts[id].password);
-						$('#server').val(window.opener.window.opener.accounts[id].server);
+						$('#username').val(mainwin.accounts[id].username);
+						$('#password').val(mainwin.accounts[id].password);
+						$('#server').val(mainwin.accounts[id].server);
 						$('#changepassbtn').removeClass('hidden');
 					}
-				}				
+				} else {
+					$('#register').removeClass('hidden');
+				}		
 
 				$('#changepass').click(function() {
 					var passwin = require('nw.gui').Window.get(
@@ -88,23 +92,47 @@
 					passwin.resizeTo(400, 300);
 				});
 
+				$('#register').click(function() {
+					// Prevent users from creating a second connection to the same server
+					var exists = false;
+					$.each(mainwin.accounts, function(i, item) {
+						if($('#server').val() === item.server) {
+							exists = true;
+							alert('You cannot have more than one connection to the same server.');
+						}
+					})
+
+					if(!exists) {
+						var regwin = require('nw.gui').Window.get(
+							window.open('register.html')
+						);
+						regwin.resizeTo(400, 400);
+					}
+				});
+
 				$('#save').click(function() {
 					var fs = require('fs');
 					var fileData = fs.readFileSync('test.txt');
 					var jsonData = $.parseJSON(fileData);
 
-					if(id != '') {
-						var newId = window.opener.window.opener.accounts.length;
-						jsonData.accounts[newId].username = $('#username').val();
-						jsonData.password[newId].password = $('#password').val();
-						jsonData.server[newId].server = $('#server').val();
+					if(id === '') {
+						// Add new account entry
+						var newId = mainwin.accounts.length;
+						jsonData.accounts.push({username: $('#username').val(), password: $('#password').val(), server: $('#server').val(), groups: new Array()});
+						// Create new object
+						mainwin.accounts.push(new mainwin.ChatServer($('#username').val(), $('#password').val(), $('#server').val(), new Array()));
+						//mainwin.accounts.push({username: $('#username').val(), password: $('#password').val(), server: $('#server').val(), groups: new Array()});
 					} else {
+						// Update existing account entry
 						jsonData.accounts[id].username = $('#username').val();
 						jsonData.server[id].server = $('#server').val();
+						mainwin.accounts[id].username = $('#username').val();
+						mainwin.server[id].server = $('#server').val();
 					}
 
 					fs.writeFileSync('test.txt', JSON.stringify(jsonData, null, '\t'));
 
+					window.opener.listAcnts();
 					window.close();
 				});
 

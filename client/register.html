@@ -1,0 +1,100 @@
+<html>
+	<head>
+		<title>Register</title>
+		<script src="js/jquery-1.11.0.min.js"></script>
+    	
+    	<!-- bootstrap -->
+    	<link rel="stylesheet" href="css/bootstrap.min.css" type="text/css">
+    	<script src="js/bootstrap.min.js"></script>
+
+		<script src="js/socket.io.min.js"></script>
+	</head>
+	<body>
+		<div class="container" style="margin: 10px; margin-bottom: 0px;">
+			<center>
+				<h3>Register</h3>
+				<small>This account does not exist. To create a new account, enter your access code for the server (given to you by an admin) and your new password.</small>
+			</center>
+			<form class="form-horizontal">
+				<div class="row" style="margin-bottom: 15px;">
+					<div class="col-xs-5">
+						<label class="control-label">Access Code</label>
+					</div>
+					<div class="col-xs-7">
+						<div class="input-group" style="width: 100%;">
+							<input id="accesscode" type="text" class="form-control" placeholder="Access Code">
+						</div>
+					</div>
+				</div>
+				<div class="row" style="margin-bottom: 15px;">
+					<div class="col-xs-5">
+						<label class="control-label">New Password</label>
+					</div>
+					<div class="col-xs-7">
+						<div class="input-group" style="width: 100%;">
+							<input id="newpass" type="text" class="form-control" placeholder="New Password">
+						</div>
+					</div>
+				</div>
+				<div class="row" style="margin-bottom: 15px;">
+					<div class="col-xs-5">
+						<label class="control-label">Confirm Password</label>
+					</div>
+					<div class="col-xs-7">
+						<div class="input-group" style="width: 100%;">
+							<input id="confirmpass" type="text" class="form-control" placeholder="Confirm Password">
+						</div>
+					</div>
+				</div>
+				<button id="cancel" type="button" class="btn btn-danger pull-left">Cancel</button>
+				<button id="register" type="button" class="btn btn-success pull-right">Register</button>
+				<div class="clearfix"></div>
+			</form>
+		</div>
+
+		<script>
+			$(document).on('ready', function() {
+				var main = window.opener.window.opener.window.opener;
+
+				$('#register').click(function() {
+					// check password, open connection to server for registration
+					// on success, remove registration button on parent window and close window
+					// user must save account after registering
+					if($('#newpass').val() !== $('#confirmpass').val()) {
+						alert('Your new passwords do not match.');
+					} else {
+						console.log('Attempting registration.');
+						var accesscode = $('#accesscode').val();
+						console.log('Access code: ' + accesscode);
+						var user = window.opener.$('#username').val();
+						console.log('User: ' + user);
+						var password = $('#confirmpass').val();
+						console.log('Password: ' + password);
+						var server = window.opener.$('#server').val();
+						console.log('Server: ' + server);
+						var regconn = io.connect(server);
+						
+						regconn.on('connect', function() {
+							regconn.emit('register', {id: regconn.socket.sessionid, accesscode: accesscode, user: user, password: password});
+							console.log('reg connected');
+						});
+
+						regconn.on('regresponse', function(data) {
+							if(data.response === 'success') {
+								window.opener.$('#password').val(password);
+								alert('You are now registered with the server.');
+								window.close();
+							} else {
+								alert(data.response);
+							}
+						});
+					}
+				});
+
+				$('#cancel').click(function() {
+					window.close();
+				});
+			});
+		</script>
+	</body>
+</html>

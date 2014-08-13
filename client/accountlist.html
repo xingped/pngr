@@ -47,30 +47,7 @@
 
 		<script>
 			$(document).ready(function() {
-				// List all saved accounts and their connection status
-				window.opener.accounts.forEach(function(item) {
-					var row = '';
-					var id = window.opener.accounts.indexOf(item);
-					row += '<tr id="'+id+'" onclick="openAcnt('+id+');">';
-					
-					if(item.connected) {
-						row += '<td name="status"><center><span class="glyphicon glyphicon-ok-circle"></span></center></td>';
-					} else if(!item.connected) {
-						row += '<td name="status"><center><span class="glyphicon glyphicon-remove-circle"></span></center></td>';
-					} else if(item.disabled) {
-						row += '<td name="status"><center><span class="glyphicon glyphicon-ban-circle"></span></center></td>';
-					}
-
-					var username = item.username; // replace this later
-					row += '<td name="username">'+username+'</td>';
-
-					var server = item.server;
-					row += '<td name="server">'+server+'</td>';
-
-					row += '</tr>';
-
-					$('#accounts').append(row);
-				});
+				listAcnts();
 				// Selector: $('#trid td[name=""]')
 
 				// Make refresh button attempt to reconnect disconnected accounts
@@ -97,6 +74,34 @@
 					window.open('account.html?id='+id)
 				);
 				acntwin.resizeTo(400, 350);
+			}
+
+			function listAcnts() {
+				$('#accounts').html('');
+				// List all saved accounts and their connection status
+				window.opener.accounts.forEach(function(item) {
+					var row = '';
+					var id = window.opener.accounts.indexOf(item);
+					row += '<tr id="'+id+'" onclick="openAcnt('+id+');">';
+					
+					if(item.connected) {
+						row += '<td name="status"><center><span class="glyphicon glyphicon-ok-circle"></span></center></td>';
+					} else if(!item.connected) {
+						row += '<td name="status"><center><span class="glyphicon glyphicon-remove-circle"></span></center></td>';
+					} else if(item.disabled) {
+						row += '<td name="status"><center><span class="glyphicon glyphicon-ban-circle"></span></center></td>';
+					}
+
+					var username = item.username; // replace this later
+					row += '<td name="username">'+username+'</td>';
+
+					var server = item.server;
+					row += '<td name="server">'+server+'</td>';
+
+					row += '</tr>';
+
+					$('#accounts').append(row);
+				});
 			}
 		</script>
 	</body>
