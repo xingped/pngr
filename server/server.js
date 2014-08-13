@@ -5,6 +5,10 @@ var express = require("express")
   , _ = require("underscore")
   , $ = require('jquery');
 
+// Prepare database
+var sqlite3 = require('sqlite3').verbose();
+var db = new sqlite3.Database('pngrdb');
+
 //Server's IP address & port number
 app.set("ipaddr", "127.0.0.1");
 app.set("port", 8080);
@@ -41,7 +45,21 @@ io.on("connection", function(socket) {
 	});
 
 	socket.on("register", function(data) {
-		socket.emit("regresponse", {id: data.id, response: "success"});
+		var accesscode = "actest";
+
+		if(data.accesscode === accesscode) {
+			// Insert user into database
+			db.serialize(function() {
+			  db.run("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT, code TEXT);");
+
+			  var stmt = db.run("INSERT INTO users VALUES ("+data.username+", "+data.password+", "+data.accesscode+");");
+			});
+
+			// Respond to client
+			socket.emit("regresponse", {id: data.id, response: "success"});
+		} else {
+			socket.emit("regresponse", {id: data.id, response: "Invalid access code."});
+		}
 	})
 });
 
