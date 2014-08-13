@@ -30,9 +30,6 @@ io.on("connection", function(socket) {
 			}, function(err, row) {
 				// Disconnect user if username or password incorrect
 				if(row === undefined || row === null) {
-					console.log('no user, disconnecting');
-					socket.disconnect(true);
-				} else if(row.username !== data.username || row.password !== data.password) {
 					console.log('bad credentials, disconnecting');
 					socket.disconnect(true);
 				}
