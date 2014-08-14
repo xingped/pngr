@@ -8,6 +8,15 @@ var express = require("express")
 // Prepare database
 var sqlite3 = require('sqlite3').verbose();
 var db = new sqlite3.Database('pngrdb');
+db.run("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT, code TEXT);", function(err) {
+	console.log("Error: Create table 'users': "+err);
+});
+db.run("CREATE TABLE IF NOT EXISTS groups ([group] TEXT, open BOOLEAN);", function(err) {
+	console.log("Error: Create table 'groups': "+err);
+});
+db.run("CREATE TABLE IF NOT EXISTS groupaccess ([group] TEXT, user TEXT);", function(err) {
+	console.log("Error: Create table 'groupaccess': "+err);
+});
 
 //Server's IP address & port number
 app.set("ipaddr", "127.0.0.1");
@@ -47,22 +56,26 @@ io.on("connection", function(socket) {
 		var exists = false;
 		var open = false;
 		db.serialize(function() {
-			db.run("CREATE TABLE IF NOT EXISTS groups ([group] TEXT, open BOOLEAN);", function(err) {
-				console.log('Error: '+err);
-			});
 			console.log('checking if group '+data.group+' exists');
-			db.get("SELECT 'group', open FROM groups WHERE [group]=$group;", {
+			db.get("SELECT [group], open FROM groups WHERE [group]=$group;", {
 				$group: data.group
 			}, function(err, row) {
-				if(row === undefined || row === null) {
+				if(err !== null) {
+					console.log("Group exists check error: "+err);
+				} else if(row === undefined || row === null) {
 					// If group doesn't exist, create and join it
 					db.run("INSERT INTO groups VALUES($group, $open);", {
 						$group: data.group,
 						$open: true
+					}, function(jerr) {
+						if(cerr !== null) {
+							socket.join(data.group);
+							console.log("joinGroup: " + data.id + ", " + data.group);
+							socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
+						} else {
+							console.log("Create group error: "+cerr);
+						}
 					});
-					socket.join(data.group);
-					console.log("joinGroup: " + data.id + ", " + data.group);
-					socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
 				} else {
 					if(row.open == true) {
 						// If group is open, join it
@@ -77,7 +90,9 @@ io.on("connection", function(socket) {
 							$user: data.user
 						}, function(verr, vrow) {
 							console.log('vrow: '+vrow);
-							if(vrow != undefined && vrow != null) {
+							if(verr === null) {
+								console.log("Group access error: "+verr);
+							} else if(vrow !== undefined && vrow !== null) {
 								// If user has permissions, join group, otherwise fail
 								socket.join(data.group);
 								console.log("joinGroup: " + data.id + ", " + data.group);
@@ -109,18 +124,19 @@ io.on("connection", function(socket) {
 
 		if(data.code === accesscode) {
 			// Insert user into database
-			db.serialize(function() {
-				db.run("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT, code TEXT);");
-
-				db.run("INSERT INTO users VALUES ($user, $pass, $code);", {
-					$user: data.user,
-					$pass: data.pass,
-					$code: data.code
-				});
+			db.run("INSERT INTO users VALUES ($user, $pass, $code);", {
+				$user: data.user,
+				$pass: data.pass,
+				$code: data.code
+			}, function(err) {
+				if (err !== null) {
+					// Respond to client
+					socket.emit("regresponse", {id: data.id, response: "success"});
+				} else {
+					console.log("SQL 'register' error: "+err);
+				}
 			});
 
-			// Respond to client
-			socket.emit("regresponse", {id: data.id, response: "success"});
 		} else {
 			socket.emit("regresponse", {id: data.id, response: "Invalid access code."});
 		}
