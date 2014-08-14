@@ -70,12 +70,14 @@ io.on("connection", function(socket) {
 						console.log("joinGroup: " + data.id + ", " + data.group);
 						socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
 					} else {
+						console.log("params: "+data.group+" "+data.user);
 						// If group is not open, check if user has permissions
-						db.get("SELECT 'group', user FROM groupaccess WHERE [group]=$group AND user=$user;", {
+						db.get("SELECT [group], user FROM groupaccess WHERE [group]=$group AND user=$user;", {
 							$group: data.group,
 							$user: data.user
 						}, function(verr, vrow) {
-							if(vrow !== undefined && vrow !== null) {
+							console.log('vrow: '+vrow);
+							if(vrow != undefined && vrow != null) {
 								// If user has permissions, join group, otherwise fail
 								socket.join(data.group);
 								console.log("joinGroup: " + data.id + ", " + data.group);

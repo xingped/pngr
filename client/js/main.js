@@ -93,8 +93,8 @@ ChatServer.prototype.connect = function(group) {
 };
 
 ChatServer.prototype.joinGroup = function(group) {
-	this.socket.emit('joinGroup', {id: this.sessionId, group: group});
-	console.log('joinGroup: ' + this.sessionId + ' ' + group);
+	this.socket.emit('joinGroup', {id: this.sessionId, user: this.username, group: group});
+	console.log('joinGroup: ' + this.sessionId + ' ' + this.username + ' ' + group);
 };
 
 function init() {
