@@ -18,7 +18,7 @@ function ChatServer(username, password, server, groups) {
 		self.socket.emit('joinServer', {id: self.sessionId, username: self.username, password: self.password});
 		
 		$.each(self.groups, function(i, group) {
-			self.socket.emit('joinGroup', {id: self.sessionId, group: group});
+			self.socket.emit('joinGroup', {id: self.sessionId, user: self.username, group: group});
 		});
 
 		console.log(self.sessionId);
@@ -28,11 +28,7 @@ function ChatServer(username, password, server, groups) {
 	this.socket.on('joinGroupResponse', function(data) {
 		if(data.result != 'true') {
 			// Display popup with reason for group join failure
-			var w = gui.Window.get(window.open());
-			w.resizeTo(100, 200);
-			wHtml = '<html><body><center><h4>' + data.result + '</h4><br />';
-			wHtml += '<button class="btn btn-default" onclick="window.close();">OK</button></center></body></html>';
-			w.html(wHtml);
+			alert(data.result);
 		} else if(data.result == 'true') {
 			console.log('group index: ' + self.groups.indexOf(data.group));
 			

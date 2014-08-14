@@ -24,7 +24,7 @@ io.on("connection", function(socket) {
 		// Search for user in database
 		db.serialize(function() {
 			console.log('checking user credentials');
-			var stmt = db.get("SELECT rowid, username, password FROM users WHERE username=$user AND password=$pass;", {
+			db.get("SELECT rowid, username, password FROM users WHERE username=$user AND password=$pass;", {
 				$user: data.username,
 				$pass: data.password
 			}, function(err, row) {
@@ -39,12 +39,56 @@ io.on("connection", function(socket) {
 	});
 
 	socket.on("joinGroup", function(data) {
-		
-		/****** TODO: validate if user is allowed to join group **********/
-
-		socket.join(data.group);
-		console.log("joinGroup: " + data.id + ", " + data.group);
-		socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
+		// Check if group exists
+		// If group does not exist, create and join it
+		// If group exists and is open, join it
+		// If group exists and is not open, check if user has permissions
+		// If user has permissions, join, otherwise fail
+		var exists = false;
+		var open = false;
+		db.serialize(function() {
+			db.run("CREATE TABLE IF NOT EXISTS groups ([group] TEXT, open BOOLEAN);", function(err) {
+				console.log('Error: '+err);
+			});
+			console.log('checking if group '+data.group+' exists');
+			db.get("SELECT 'group', open FROM groups WHERE [group]=$group;", {
+				$group: data.group
+			}, function(err, row) {
+				if(row === undefined || row === null) {
+					// If group doesn't exist, create and join it
+					db.run("INSERT INTO groups VALUES($group, $open);", {
+						$group: data.group,
+						$open: true
+					});
+					socket.join(data.group);
+					console.log("joinGroup: " + data.id + ", " + data.group);
+					socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
+				} else {
+					if(row.open == true) {
+						// If group is open, join it
+						socket.join(data.group);
+						console.log("joinGroup: " + data.id + ", " + data.group);
+						socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
+					} else {
+						// If group is not open, check if user has permissions
+						db.get("SELECT 'group', user FROM groupaccess WHERE [group]=$group AND user=$user;", {
+							$group: data.group,
+							$user: data.user
+						}, function(verr, vrow) {
+							if(vrow !== undefined && vrow !== null) {
+								// If user has permissions, join group, otherwise fail
+								socket.join(data.group);
+								console.log("joinGroup: " + data.id + ", " + data.group);
+								socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
+							} else {
+								socket.emit('joinGroupResponse', {id: data.id, group: data.group, 
+									result: 'You do not have permission to join this group. Please contact an Admin.'});
+							}
+						});
+					}
+				}
+			});
+		});
 	});
 
 	socket.on('sendMsg', function(data) {
@@ -66,7 +110,7 @@ io.on("connection", function(socket) {
 			db.serialize(function() {
 				db.run("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT, code TEXT);");
 
-				var stmt = db.run("INSERT INTO users VALUES ($user, $pass, $code);", {
+				db.run("INSERT INTO users VALUES ($user, $pass, $code);", {
 					$user: data.user,
 					$pass: data.pass,
 					$code: data.code
