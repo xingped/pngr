@@ -46,11 +46,13 @@
 				<button id="send" class="btn btn-success pull-right">Send</button>
 				<div class="clearfix"></div>
 			</form>
-			<div id="error" class="alert alert-danger hidden"></div>
 		</div>
 
 		<script type="text/javascript">
 			$(document).ready(function() {
+				// Counter for messages sent and received
+				var msgcnt = 0;
+
 				// list all accounts
 				window.opener.accounts.forEach(function(item) {
 					$('#servers').append('<option value="'+window.opener.accounts.indexOf(item)+'">'+item.username+' ['+item.server+']</option>');
@@ -76,6 +78,7 @@
 
 				// when the send button is pressed, try to send message
 				$('#send').click(function() {
+					msgcnt = $('#groups').val().length;
 					window.opener.accounts[$('#servers').val()].socket.emit('sendMsg', {
 						id: window.opener.accounts[$('#servers').val()].sessionId, 
 						user: window.opener.accounts[$('#servers').val()].username,
@@ -89,11 +92,12 @@
 				window.opener.accounts[$('#servers').val()].socket.on('msgResponse', function(data) {
 					console.log('msgRespone from ' + window.opener.accounts[$('#servers').val()]);
 					if (data.response === 'success') {
-						window.close();
+						msgcnt--;
+						// Only close the window if a successful response is received for all messages
+						// This is to allow the user to resend a message without losing the message content
+						if(msgcnt == 0) window.close(); 
 					} else {
-						$('#error').html(data.response);
-						$('#error').removeClass('hidden').addClass('show');
-						window.resizeTo(400, 650);
+						alert(data.response);
 					}
 				});
 
