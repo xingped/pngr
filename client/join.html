@@ -34,8 +34,8 @@
 						<input type="text" class="form-control" id="group" placeholder="Group Name">
 					</div>
 				</div>
-				<button class="btn btn-danger pull-left" onclick="cancel()">Cancel</a>
-				<button class="btn btn-success pull-right" onclick="joinGroup()">Join</button>
+				<button id="cancel" class="btn btn-danger pull-left">Cancel</a>
+				<button id="join" class="btn btn-success pull-right">Join</button>
 				<div class="clearfix"></div>
 			</form>
 		</div>
@@ -53,17 +53,17 @@
 					$('#serverlist').append(options);
 				}
 			});
+
+			$('#join').click(function() {
+				// Join group on the server
+				window.opener.accounts[$('#serverlist').val()].joinGroup($('#group').val());
+				// Group will be saved from main window if join is successful
+				window.close();
+			});
+
+			$('#cancel').click(function() {
+				window.close();
+			});
 		});
-
-		function joinGroup() {
-			// Join group on the server
-			window.opener.accounts[$('#serverlist').val()].joinGroup($('#group').val());
-			// Group will be saved from main window if join is successful
-			window.close();
-		}
-
-		function cancel() {
-			window.close();
-		}
 	</script>
 </html>
