@@ -8,14 +8,27 @@ var express = require("express")
 // Prepare database
 var sqlite3 = require('sqlite3').verbose();
 var db = new sqlite3.Database('pngrdb');
-db.run("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT, code TEXT);", function(err) {
-	console.log("Error: Create table 'users': "+err);
-});
-db.run("CREATE TABLE IF NOT EXISTS groups ([group] TEXT, open BOOLEAN);", function(err) {
-	console.log("Error: Create table 'groups': "+err);
-});
-db.run("CREATE TABLE IF NOT EXISTS groupaccess ([group] TEXT, user TEXT);", function(err) {
-	console.log("Error: Create table 'groupaccess': "+err);
+
+// Create tables on first run
+db.serialize(function() {
+	db.run("PRAGMA foreign_keys=ON;");
+	db.run("CREATE TABLE IF NOT EXISTS users (userid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, regdate DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, code TEXT, username TEXT, password TEXT, admin BOOLEAN);", function(err) {
+		console.log("Error: Create table 'users': "+err);
+	});
+	db.run("CREATE UNIQUE INDEX users_username ON users(username);");
+	db.run("CREATE TABLE IF NOT EXISTS groups (groupid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, regdate DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, groupname TEXT, open BOOLEAN);", function(err) {
+		console.log("Error: Create table 'groups': "+err);
+	});
+	db.run("CREATE UNIQUE INDEX groups_groupname ON groups(groupname);");
+	db.run("CREATE TABLE IF NOT EXISTS groupjoin (groupid INTEGER, userid INTEGER, FOREIGN KEY(groupid) REFERENCES groups(groupid), FOREIGN KEY(userid) REFERENCES users(userid));", function(err) {
+		console.log("Error: Create table 'groupjoin': "+err);
+	});
+	db.run("CREATE TABLE IF NOT EXISTS grouppost (groupid INTEGER, userid INTEGER, FOREIGN KEY(groupid) REFERENCES groups(groupid), FOREIGN KEY(userid) REFERENCES users(userid));", function(err) {
+		console.log("Error: Create table 'grouppost': "+err);
+	});
+	db.run("CREATE TABLE IF NOT EXISTS groupadd (groupid INTEGER, userid INTEGER, FOREIGN KEY(groupid) REFERENCES groups(groupid), FOREIGN KEY(userid) REFERENCES users(userid));", function(err) {
+		console.log("Error: Create table 'groupadd': "+err);
+	});
 });
 
 //Server's IP address & port number
@@ -33,13 +46,17 @@ io.on("connection", function(socket) {
 		// Search for user in database
 		db.serialize(function() {
 			console.log('checking user credentials');
-			db.get("SELECT rowid, username, password FROM users WHERE username=$user AND password=$pass;", {
-				$user: data.username,
-				$pass: data.password
+			db.get("SELECT username, password FROM users WHERE username=$user;", {
+				$user: data.username
 			}, function(err, row) {
 				// Disconnect user if username or password incorrect
-				if(row === undefined || row === null) {
-					console.log('bad credentials, disconnecting');
+				if (err !== null) {
+					console.log('User joinServer error: '+err);
+				} else if(row === undefined || row === null) {
+					console.log('user '+data.username+' not found, disconnecting');
+					socket.disconnect(true);
+				} else if(data.password !== row.password) {
+					console.log('bad credentials for user '+data.username+', disconnecting');
 					socket.disconnect(true);
 				}
 			});
@@ -57,14 +74,14 @@ io.on("connection", function(socket) {
 		var open = false;
 		db.serialize(function() {
 			console.log('checking if group '+data.group+' exists');
-			db.get("SELECT [group], open FROM groups WHERE [group]=$group;", {
+			db.get("SELECT groupname, open FROM groups WHERE groupname=$group;", {
 				$group: data.group
 			}, function(err, row) {
 				if(err !== null) {
 					console.log("Group exists check error: "+err);
 				} else if(row === undefined || row === null) {
 					// If group doesn't exist, create and join it
-					db.run("INSERT INTO groups VALUES($group, $open);", {
+					db.run("INSERT INTO groups (groupname, open) VALUES($group, $open);", {
 						$group: data.group,
 						$open: true
 					}, function(jerr) {
@@ -85,13 +102,13 @@ io.on("connection", function(socket) {
 					} else {
 						console.log("params: "+data.group+" "+data.user);
 						// If group is not open, check if user has permissions
-						db.get("SELECT [group], user FROM groupaccess WHERE [group]=$group AND user=$user;", {
+						db.get("SELECT groups.groupname, users.username FROM groups INNER JOIN groupjoin ON groupjoin.groupid=groups.groupid INNER JOIN users ON groupjoin.userid=users.userid WHERE groups.groupname=$group AND users.username=$user;", {
 							$group: data.group,
 							$user: data.user
 						}, function(verr, vrow) {
 							console.log('vrow: '+vrow);
-							if(verr === null) {
-								console.log("Group access error: "+verr);
+							if(verr !== null) {
+								console.log("Group join error: "+verr);
 							} else if(vrow !== undefined && vrow !== null) {
 								// If user has permissions, join group, otherwise fail
 								socket.join(data.group);
@@ -110,11 +127,9 @@ io.on("connection", function(socket) {
 
 	socket.on('sendMsg', function(data) {
 		console.log("message from " + data.id + " to " + data.groups.toString());
-		//var groups = data.groups.toString().split(',');
-		//console.log("groups: " + groups.toString());
 		for (var g in data.groups) {
 			console.log("sending message from " + data.id + " to " + data.groups[g]);
-			io.sockets.in(data.groups[g]).emit('newMsg', {id: data.id, group: data.groups[g], time: Date.now().toString(), subject: data.subject, message: data.message});
+			io.sockets.in(data.groups[g]).emit('newMsg', {id: data.id, user: data.user, group: data.groups[g], time: Date.now().toString(), subject: data.subject, message: data.message});
 		}
 		socket.emit('msgResponse', {id: data.id, response: 'success'});
 	});
@@ -124,10 +139,11 @@ io.on("connection", function(socket) {
 
 		if(data.code === accesscode) {
 			// Insert user into database
-			db.run("INSERT INTO users VALUES ($user, $pass, $code);", {
+			db.run("INSERT INTO users (code, username, password, admin) VALUES ($code, $user, $pass, $admin);", {
 				$user: data.user,
 				$pass: data.pass,
-				$code: data.code
+				$code: data.code,
+				$admin: false
 			}, function(err) {
 				if (err !== null) {
 					// Respond to client

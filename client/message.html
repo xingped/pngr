@@ -78,6 +78,7 @@
 				$('#send').click(function() {
 					window.opener.accounts[$('#servers').val()].socket.emit('sendMsg', {
 						id: window.opener.accounts[$('#servers').val()].sessionId, 
+						user: window.opener.accounts[$('#servers').val()].username,
 						groups: $('#groups').val(), 
 						subject: $('#subject').val(), 
 						message: $('#message').val()

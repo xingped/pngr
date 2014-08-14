@@ -62,7 +62,7 @@ function ChatServer(username, password, server, groups) {
 		msgHtml += '			<div class="panel-body">' + data.message + '</div>';
 		msgHtml += '		</div>';
 		msgHtml += '		<div class="panel-footer">';
-		msgHtml += '			<small>' + data.id + ' to ' + data.group + '</small>';
+		msgHtml += '			<small>' + data.user + ' to ' + data.group + '</small>';
 		msgHtml += '		</div>';
 		msgHtml += '	</div>';
 		msgHtml += '</div>';
