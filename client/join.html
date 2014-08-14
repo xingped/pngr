@@ -44,12 +44,14 @@
 		$(document).ready(function() {
 			// Populate server select
 			window.opener.accounts.forEach(function(item) {
-				var options = '';
-				options += '<option value="'+window.opener.accounts.indexOf(item)+'">';
-				options += item.username + " [" + item.server + "]";
-				options += '</option>';
+				if(item.socket.socket.connected) {
+					var options = '';
+					options += '<option value="'+window.opener.accounts.indexOf(item)+'">';
+					options += item.username + " [" + item.server + "]";
+					options += '</option>';
 
-				$('#serverlist').append(options);
+					$('#serverlist').append(options);
+				}
 			});
 		});
 
