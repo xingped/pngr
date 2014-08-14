@@ -86,11 +86,11 @@ io.on("connection", function(socket) {
 						$open: true
 					}, function(jerr) {
 						if(cerr !== null) {
+							console.log("Create group error: "+cerr);
+						} else {
 							socket.join(data.group);
 							console.log("joinGroup: " + data.id + ", " + data.group);
 							socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
-						} else {
-							console.log("Create group error: "+cerr);
 						}
 					});
 				} else {
@@ -128,10 +128,21 @@ io.on("connection", function(socket) {
 	socket.on('sendMsg', function(data) {
 		console.log("message from " + data.id + " to " + data.groups.toString());
 		for (var g in data.groups) {
-			console.log("sending message from " + data.id + " to " + data.groups[g]);
-			io.sockets.in(data.groups[g]).emit('newMsg', {id: data.id, user: data.user, group: data.groups[g], time: Date.now().toString(), subject: data.subject, message: data.message});
+			db.run("SELECT groups.groupname, users.username FROM groups INNER JOIN grouppost ON grouppost.groupid=groups.groupid INNER JOIN users ON grouppost.userid=users.userid WHERE groups.groupname=$group AND users.username=$user;", {
+				$group: data.group,
+				$user: data.user
+			}, function(err, row) {
+				if(err !== null) {
+					console.log("sendMsg SQL error: "+err);
+				} else if(row !== undefined && row !== null) {
+					console.log("sendMsg error: insufficient permissions");
+				} else {
+					console.log("sending message from " + data.id + " to " + data.groups[g]);
+					io.sockets.in(data.groups[g]).emit('newMsg', {id: data.id, user: data.user, group: data.groups[g], time: Date.now().toString(), subject: data.subject, message: data.message});
+					socket.emit('msgResponse', {id: data.id, response: 'success'});
+				}
+			});
 		}
-		socket.emit('msgResponse', {id: data.id, response: 'success'});
 	});
 
 	socket.on("register", function(data) {
@@ -146,10 +157,10 @@ io.on("connection", function(socket) {
 				$admin: false
 			}, function(err) {
 				if (err !== null) {
+					console.log("SQL 'register' error: "+err);
+				} else {
 					// Respond to client
 					socket.emit("regresponse", {id: data.id, response: "success"});
-				} else {
-					console.log("SQL 'register' error: "+err);
 				}
 			});
 
