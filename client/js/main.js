@@ -38,6 +38,7 @@ function ChatServer(username, password, server, groups) {
 				var jsonData = $.parseJSON(fileData);
 				
 				jsonData.accounts[accounts.indexOf(self)].groups.push({"name": data.group});
+				self.groups.push(data.group);
 
 				fs.writeFileSync('test.txt', JSON.stringify(jsonData, null, '\t'));
 				console.log('joinGroup ' + data.group + ' success, added');

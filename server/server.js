@@ -11,23 +11,29 @@ var db = new sqlite3.Database('pngrdb');
 
 // Create tables on first run
 db.serialize(function() {
-	db.run("PRAGMA foreign_keys=ON;");
+	db.run("PRAGMA foreign_keys=ON;", function(err) {
+		if(err !== null) console.log("Error: set foreign_keys=ON");
+	});
 	db.run("CREATE TABLE IF NOT EXISTS users (userid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, regdate DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, code TEXT, username TEXT, password TEXT, admin BOOLEAN);", function(err) {
-		console.log("Error: Create table 'users': "+err);
+		if(err !== null) console.log("Error: Create table 'users': "+err);
 	});
-	db.run("CREATE UNIQUE INDEX users_username ON users(username);");
+	db.run("CREATE UNIQUE INDEX IF NOT EXISTS users_username ON users(username);", function(err) {
+		if(err !== null) console.log("Error: Create INDEX users: "+err);
+	});
 	db.run("CREATE TABLE IF NOT EXISTS groups (groupid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, regdate DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, groupname TEXT, open BOOLEAN);", function(err) {
-		console.log("Error: Create table 'groups': "+err);
+		if(err !== null) console.log("Error: Create table 'groups': "+err);
 	});
-	db.run("CREATE UNIQUE INDEX groups_groupname ON groups(groupname);");
+	db.run("CREATE UNIQUE INDEX IF NOT EXISTS groups_groupname ON groups(groupname);", function(err) {
+		if(err !== null) console.log("Error: Create INDEX groups "+err);
+	});
 	db.run("CREATE TABLE IF NOT EXISTS groupjoin (groupid INTEGER, userid INTEGER, FOREIGN KEY(groupid) REFERENCES groups(groupid), FOREIGN KEY(userid) REFERENCES users(userid));", function(err) {
-		console.log("Error: Create table 'groupjoin': "+err);
+		if(err !== null) console.log("Error: Create table 'groupjoin': "+err);
 	});
 	db.run("CREATE TABLE IF NOT EXISTS grouppost (groupid INTEGER, userid INTEGER, FOREIGN KEY(groupid) REFERENCES groups(groupid), FOREIGN KEY(userid) REFERENCES users(userid));", function(err) {
-		console.log("Error: Create table 'grouppost': "+err);
+		if(err !== null) console.log("Error: Create table 'grouppost': "+err);
 	});
 	db.run("CREATE TABLE IF NOT EXISTS groupadd (groupid INTEGER, userid INTEGER, FOREIGN KEY(groupid) REFERENCES groups(groupid), FOREIGN KEY(userid) REFERENCES users(userid));", function(err) {
-		console.log("Error: Create table 'groupadd': "+err);
+		if(err !== null) console.log("Error: Create table 'groupadd': "+err);
 	});
 });
 
@@ -84,7 +90,7 @@ io.on("connection", function(socket) {
 					db.run("INSERT INTO groups (groupname, open) VALUES($group, $open);", {
 						$group: data.group,
 						$open: true
-					}, function(jerr) {
+					}, function(cerr) {
 						if(cerr !== null) {
 							console.log("Create group error: "+cerr);
 						} else {
