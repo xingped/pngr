@@ -45,6 +45,16 @@
 						</div>
 					</div>
 				</div>
+				<table class="table table-condensed">
+					<thead>
+						<tr>
+							<th></th>
+							<th>Groups</th>
+						</tr>
+					</thead>
+					<tbody id="groups">
+					</tbody>
+				</table>
 				<button id="cancel" class="btn btn-danger pull-left">Cancel</button>
 				<button id="save" type="button" class="btn btn-success pull-right">Save</button>
 				<center><button id="register" type="button" class="btn btn-primary hidden">Register</button></center>
@@ -70,6 +80,19 @@
 						$('#password').val(mainwin.accounts[id].password);
 						$('#server').val(mainwin.accounts[id].server);
 						$('#changepassbtn').removeClass('hidden');
+						$.each(mainwin.accounts[id].groups, function(i, item) {
+							var newgroup = '';
+							newgroup += '<tr>';
+							newgroup += '<td><center><span class="glyphicon glyphicon-remove"></span></center></td>';
+							newgroup += '<td>'+item+'</td>';
+							newgroup += '</tr>';
+
+							$('#groups').append(newgroup);
+						});
+
+						// Resize window based on number of groups to prevent the need for scrolling
+						var newheight = 300+33+33*mainwin.accounts[id].groups.length;
+						window.resizeTo(400, newheight);
 					}
 				} else {
 					$('#register').removeClass('hidden');
