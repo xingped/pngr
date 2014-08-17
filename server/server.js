@@ -58,9 +58,9 @@ io.on("connection", function(socket) {
 				$user: data.username
 			}, function(err, row) {
 				// Disconnect user if username or password incorrect
-				if (_.isNull(err)) {
+				if (!_.isNull(err)) {
 					console.log('User joinServer error: '+err);
-				} else if(_.isUndefined(row) || _.isNull(row)) {
+				} else if(!_.isUndefined(row) || !_.isNull(row)) {
 					console.log('user '+data.username+' not found, disconnecting');
 					socket.disconnect(true);
 				} else if(data.password !== row.password) {
@@ -87,15 +87,15 @@ io.on("connection", function(socket) {
 			db.get("SELECT groupname, open FROM groups WHERE groupname=$group;", {
 				$group: data.group
 			}, function(err, row) {
-				if(_.isNull(err)) {
+				if(!_.isNull(err)) {
 					console.log("Group exists check error: "+err);
-				} else if(_.isUndefined(row) || _.isNull(row)) {
+				} else if(!_.isUndefined(row) || !_.isNull(row)) {
 					// If group doesn't exist, create and join it
 					db.run("INSERT INTO groups (groupname, open) VALUES($group, $open);", {
 						$group: data.group,
 						$open: true
 					}, function(cerr) {
-						if(_.isNull(cerr)) {
+						if(!_.isNull(cerr)) {
 							console.log("Create group error: "+cerr);
 						} else {
 							_.findWhere(users, {id: data.id}).groups.push(data.group);
@@ -119,9 +119,9 @@ io.on("connection", function(socket) {
 							$user: _.findWhere(users, {id: data.id}).username
 						}, function(verr, vrow) {
 							console.log('vrow: '+vrow);
-							if(_.isNull(verr)) {
+							if(!_.isNull(verr)) {
 								console.log("Group join error: "+verr);
-							} else if(_.isUndefined(vrow) || _.isNull(vrow)) {
+							} else if(!_.isUndefined(vrow) || !_.isNull(vrow)) {
 								// If user has permissions, join group, otherwise fail
 								_.findWhere(users, {id: data.id}).groups.push(data.group);
 								socket.join(data.group);
@@ -140,9 +140,9 @@ io.on("connection", function(socket) {
 
 	socket.on('sendMsg', function(data) {
 		console.log("message from " + data.id + " to " + data.groups.toString());
-		if(_.isUndefined(data.subject) || _.isEmpty(data.subject)) {
+		if(!_.isUndefined(data.subject) || !_.isEmpty(data.subject)) {
 			socket.emit('msgResponse', {id: data.id, response: 'Message subject cannot be empty.'});
-		} else if(_.isUndefined(data.message) || _.isEmpty(data.message)) {
+		} else if(!_.isUndefined(data.message) || !_.isEmpty(data.message)) {
 			socket.emit('msgResponse', {id: data.id, response: 'Message body cannot be empty.'});
 		} else {
 			for (var g in data.groups) {
@@ -154,9 +154,9 @@ io.on("connection", function(socket) {
 						$group: data.group,
 						$user: _.findWhere(users, {id: data.id}).username
 					}, function(err, row) {
-						if(_.isNull(err)) {
+						if(!_.isNull(err)) {
 							console.log("sendMsg SQL error: "+err);
-						} else if(_.isUndefined(row) || _.isNull(row)) {
+						} else if(!_.isUndefined(row) || !_.isNull(row)) {
 							console.log("sendMsg error: insufficient permissions");
 						} else {
 							console.log("sending message from " + data.id + " to " + data.groups[g]);
@@ -181,7 +181,7 @@ io.on("connection", function(socket) {
 				$code: data.code,
 				$admin: false
 			}, function(err) {
-				if (_.isNull(err)) {
+				if (!_.isNull(err)) {
 					console.log("SQL 'register' error: "+err);
 				} else {
 					// Respond to client
