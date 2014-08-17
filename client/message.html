@@ -52,10 +52,14 @@
 			$(document).ready(function() {
 				// Counter for messages sent and received
 				var msgcnt = 0;
+				var firstElem = -1;
 
 				// list all accounts
 				window.opener.accounts.forEach(function(item) {
-					$('#servers').append('<option value="'+window.opener.accounts.indexOf(item)+'">'+item.username+' ['+item.server+']</option>');
+					if(item.socket.socket.connected) {
+						$('#servers').append('<option value="'+window.opener.accounts.indexOf(item)+'">'+item.username+' ['+item.server+']</option>');
+						if(firstElem < 0) firstElem = window.opener.accounts.indexOf(item);
+					}
 				});
 
 				// When server selection changes, change group list
@@ -71,17 +75,17 @@
 				});
 
 				// initialize the group list with the first server on the list
-				window.opener.accounts[0].groups.forEach(function(item) {
+				window.opener.accounts[firstElem].groups.forEach(function(item) {
 					$('#groups').append('<option value="'+item+'">'+item+'</option>');
 				});
 				$('#groups').multiselect();
 
 				// when the send button is pressed, try to send message
 				$('#send').click(function() {
+					// add null checks here
 					msgcnt = $('#groups').val().length;
 					window.opener.accounts[$('#servers').val()].socket.emit('sendMsg', {
-						id: window.opener.accounts[$('#servers').val()].sessionId, 
-						user: window.opener.accounts[$('#servers').val()].username,
+						id: window.opener.accounts[$('#servers').val()].sessionId,
 						groups: $('#groups').val(), 
 						subject: $('#subject').val(), 
 						message: $('#message').val()

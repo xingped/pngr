@@ -16,12 +16,13 @@ function ChatServer(username, password, server, groups) {
 	this.socket.on('connect', function() {
 		self.sessionId = self.socket.socket.sessionid;
 		self.socket.emit('joinServer', {id: self.sessionId, username: self.username, password: self.password});
-		
+	});
+
+	this.socket.on('joinServerResponse', function() {
+		console.log(self.sessionId);
 		$.each(self.groups, function(i, group) {
 			self.socket.emit('joinGroup', {id: self.sessionId, user: self.username, group: group});
 		});
-
-		console.log(self.sessionId);
 	});
 
 	// Server response from trying to join group

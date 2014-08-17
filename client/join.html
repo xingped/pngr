@@ -55,7 +55,6 @@
 			});
 
 			$('#join').click(function() {
-				// Join group on the server
 				window.opener.accounts[$('#serverlist').val()].joinGroup($('#group').val());
 				// Group will be saved from main window if join is successful
 				window.close();

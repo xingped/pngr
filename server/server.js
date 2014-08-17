@@ -67,7 +67,9 @@ io.on("connection", function(socket) {
 					console.log('bad credentials for user '+data.username+', disconnecting');
 					socket.disconnect(true);
 				} else {
-					users.push({id: data.id, username: data.username, groups: data.groups});
+					console.log('User '+data.username+' has successfully joined.');
+					users.push({id: data.id, username: data.username, groups: new Array()});
+					socket.emit('joinServerResponse', {id: data.id, response: 'success'});
 				}
 			});
 		});
@@ -80,62 +82,67 @@ io.on("connection", function(socket) {
 		// If group exists and is open, join it
 		// If group exists and is not open, check if user has permissions
 		// If user has permissions, join, otherwise fail
-		var exists = false;
-		var open = false;
-		db.serialize(function() {
-			console.log('checking if group '+data.group+' exists');
-			db.get("SELECT groupname, open FROM groups WHERE groupname=$group;", {
-				$group: data.group
-			}, function(err, row) {
-				if(!_.isNull(err)) {
-					console.log("Group exists check error: "+err);
-				} else if(_.isUndefined(row) || _.isNull(row)) {
-					// If group doesn't exist, create and join it
-					db.run("INSERT INTO groups (groupname, open) VALUES($group, $open);", {
-						$group: data.group,
-						$open: true
-					}, function(cerr) {
-						if(!_.isNull(cerr)) {
-							console.log("Create group error: "+cerr);
-						} else {
-							_.findWhere(users, {id: data.id}).groups.push(data.group);
-							socket.join(data.group);
-							console.log("joinGroup: " + data.id + ", " + data.group);
-							socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
-						}
-					});
-				} else {
-					if(row.open == true) {
-						// If group is open, join it
-						_.findWhere(users, {id: data.id}).groups.push(data.group);
-						socket.join(data.group);
-						console.log("joinGroup: " + data.id + ", " + data.group);
-						socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
-					} else {
-						console.log("params: "+data.group+" "+data.user);
-						// If group is not open, check if user has permissions
-						db.get("SELECT groups.groupname, users.username FROM groups INNER JOIN groupjoin ON groupjoin.groupid=groups.groupid INNER JOIN users ON groupjoin.userid=users.userid WHERE groups.groupname=$group AND users.username=$user;", {
+		if(_.indexOf(_.findWhere(users, {id: data.id}).groups, data.group) >= 0) {
+			// If the user is already in the group, tell them
+			// Not technically an error, but may prevent DOS attack on database
+			socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'You are already in the group "'+data.group+'".'});
+		} else {
+			// Else if the user is not in the group, try to join
+			db.serialize(function() {
+				console.log('checking if group '+data.group+' exists');
+				db.get("SELECT groupname, open FROM groups WHERE groupname=$group;", {
+					$group: data.group
+				}, function(err, row) {
+					if(!_.isNull(err)) {
+						console.log("Group exists check error: "+err);
+					} else if(_.isUndefined(row) || _.isNull(row)) {
+						// If group doesn't exist, create and join it
+						db.run("INSERT INTO groups (groupname, open) VALUES($group, $open);", {
 							$group: data.group,
-							$user: _.findWhere(users, {id: data.id}).username
-						}, function(verr, vrow) {
-							console.log('vrow: '+vrow);
-							if(!_.isNull(verr)) {
-								console.log("Group join error: "+verr);
-							} else if(_.isUndefined(vrow) || _.isNull(vrow)) {
-								// If user has permissions, join group, otherwise fail
+							$open: true
+						}, function(cerr) {
+							if(!_.isNull(cerr)) {
+								console.log("Create group error: "+cerr);
+							} else {
 								_.findWhere(users, {id: data.id}).groups.push(data.group);
 								socket.join(data.group);
 								console.log("joinGroup: " + data.id + ", " + data.group);
 								socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
-							} else {
-								socket.emit('joinGroupResponse', {id: data.id, group: data.group, 
-									result: 'You do not have permission to join this group. Please contact an Admin.'});
 							}
 						});
+					} else {
+						if(row.open == true) {
+							// If group is open, join it
+							_.findWhere(users, {id: data.id}).groups.push(data.group);
+							socket.join(data.group);
+							console.log("joinGroup: " + data.id + ", " + data.group);
+							socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
+						} else {
+							console.log("params: "+data.group+" "+data.user);
+							// If group is not open, check if user has permissions
+							db.get("SELECT groups.groupname, users.username FROM groups INNER JOIN groupjoin ON groupjoin.groupid=groups.groupid INNER JOIN users ON groupjoin.userid=users.userid WHERE groups.groupname=$group AND users.username=$user;", {
+								$group: data.group,
+								$user: _.findWhere(users, {id: data.id}).username
+							}, function(verr, vrow) {
+								console.log('vrow: '+vrow);
+								if(!_.isNull(verr)) {
+									console.log("Group join error: "+verr);
+								} else if(_.isUndefined(vrow) || _.isNull(vrow)) {
+									// User does not have permissions to join group
+									socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'You do not have permission to join the group "'+data.group+'". Please contact an Admin.'});
+								} else {
+									// If user has permissions, join group
+									_.findWhere(users, {id: data.id}).groups.push(data.group);
+									socket.join(data.group);
+									console.log("joinGroup: " + data.id + ", " + data.group);
+									socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
+								}
+							});
+						}
 					}
-				}
+				});
 			});
-		});
+		}
 	});
 
 	socket.on('sendMsg', function(data) {
@@ -147,17 +154,19 @@ io.on("connection", function(socket) {
 		} else {
 			for (var g in data.groups) {
 				// Fail if message is received with group that user is not in
-				if($.inArray(_.findWhere(users, {id: data.id}), data.groups[g]) < 0) {
+				if(_.indexOf(_.findWhere(users, {id: data.id}).groups, data.groups[g]) < 0) {
 					socket.emit('msgResponse', {id: data.id, response: 'You are not in group '+data.groups[g]});
 				} else {
-					db.run("SELECT groups.groupname, users.username FROM groups INNER JOIN grouppost ON grouppost.groupid=groups.groupid INNER JOIN users ON grouppost.userid=users.userid WHERE groups.groupname=$group AND users.username=$user;", {
-						$group: data.group,
+					db.get("SELECT groups.groupname, users.username FROM groups INNER JOIN grouppost ON grouppost.groupid=groups.groupid INNER JOIN users ON grouppost.userid=users.userid WHERE groups.groupname=$group AND users.username=$user;", {
+						$group: data.groups[g],
 						$user: _.findWhere(users, {id: data.id}).username
 					}, function(err, row) {
 						if(!_.isNull(err)) {
 							console.log("sendMsg SQL error: "+err);
+							socket.emit('msgResponse', {id: data.id, response: 'Server error.'});
 						} else if(_.isUndefined(row) || _.isNull(row)) {
 							console.log("sendMsg error: insufficient permissions");
+							socket.emit('msgResponse', {id: data.id, response: 'Insufficient permissions for group '+data.groups[g]+'.'});
 						} else {
 							console.log("sending message from " + data.id + " to " + data.groups[g]);
 							io.sockets.in(data.groups[g]).emit('newMsg', {id: data.id, user: _.findWhere(users, {id: data.id}).username, group: data.groups[g], time: Date.now().toString(), subject: data.subject, message: data.message});
