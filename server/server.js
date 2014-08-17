@@ -37,6 +37,8 @@ db.serialize(function() {
 	});
 });
 
+var users = [];
+
 //Server's IP address & port number
 app.set("ipaddr", "127.0.0.1");
 app.set("port", 8080);
@@ -56,14 +58,16 @@ io.on("connection", function(socket) {
 				$user: data.username
 			}, function(err, row) {
 				// Disconnect user if username or password incorrect
-				if (err !== null) {
+				if (_.isNull(err)) {
 					console.log('User joinServer error: '+err);
-				} else if(row === undefined || row === null) {
+				} else if(_.isUndefined(row) || _.isNull(row)) {
 					console.log('user '+data.username+' not found, disconnecting');
 					socket.disconnect(true);
 				} else if(data.password !== row.password) {
 					console.log('bad credentials for user '+data.username+', disconnecting');
 					socket.disconnect(true);
+				} else {
+					users.push({id: data.id, username: data.username, groups: data.groups});
 				}
 			});
 		});
@@ -83,17 +87,18 @@ io.on("connection", function(socket) {
 			db.get("SELECT groupname, open FROM groups WHERE groupname=$group;", {
 				$group: data.group
 			}, function(err, row) {
-				if(err !== null) {
+				if(_.isNull(err)) {
 					console.log("Group exists check error: "+err);
-				} else if(row === undefined || row === null) {
+				} else if(_.isUndefined(row) || _.isNull(row)) {
 					// If group doesn't exist, create and join it
 					db.run("INSERT INTO groups (groupname, open) VALUES($group, $open);", {
 						$group: data.group,
 						$open: true
 					}, function(cerr) {
-						if(cerr !== null) {
+						if(_.isNull(cerr)) {
 							console.log("Create group error: "+cerr);
 						} else {
+							_.findWhere(users, {id: data.id}).groups.push(data.group);
 							socket.join(data.group);
 							console.log("joinGroup: " + data.id + ", " + data.group);
 							socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
@@ -102,6 +107,7 @@ io.on("connection", function(socket) {
 				} else {
 					if(row.open == true) {
 						// If group is open, join it
+						_.findWhere(users, {id: data.id}).groups.push(data.group);
 						socket.join(data.group);
 						console.log("joinGroup: " + data.id + ", " + data.group);
 						socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
@@ -110,13 +116,14 @@ io.on("connection", function(socket) {
 						// If group is not open, check if user has permissions
 						db.get("SELECT groups.groupname, users.username FROM groups INNER JOIN groupjoin ON groupjoin.groupid=groups.groupid INNER JOIN users ON groupjoin.userid=users.userid WHERE groups.groupname=$group AND users.username=$user;", {
 							$group: data.group,
-							$user: data.user
+							$user: _.findWhere(users, {id: data.id}).username
 						}, function(verr, vrow) {
 							console.log('vrow: '+vrow);
-							if(verr !== null) {
+							if(_.isNull(verr)) {
 								console.log("Group join error: "+verr);
-							} else if(vrow !== undefined && vrow !== null) {
+							} else if(_.isUndefined(vrow) || _.isNull(vrow)) {
 								// If user has permissions, join group, otherwise fail
+								_.findWhere(users, {id: data.id}).groups.push(data.group);
 								socket.join(data.group);
 								console.log("joinGroup: " + data.id + ", " + data.group);
 								socket.emit('joinGroupResponse', {id: data.id, group: data.group, result: 'true'});
@@ -133,22 +140,34 @@ io.on("connection", function(socket) {
 
 	socket.on('sendMsg', function(data) {
 		console.log("message from " + data.id + " to " + data.groups.toString());
-		for (var g in data.groups) {
-			db.run("SELECT groups.groupname, users.username FROM groups INNER JOIN grouppost ON grouppost.groupid=groups.groupid INNER JOIN users ON grouppost.userid=users.userid WHERE groups.groupname=$group AND users.username=$user;", {
-				$group: data.group,
-				$user: data.user
-			}, function(err, row) {
-				if(err !== null) {
-					console.log("sendMsg SQL error: "+err);
-				} else if(row !== undefined && row !== null) {
-					console.log("sendMsg error: insufficient permissions");
+		if(_.isUndefined(data.subject) || _.isEmpty(data.subject)) {
+			socket.emit('msgResponse', {id: data.id, response: 'Message subject cannot be empty.'});
+		} else if(_.isUndefined(data.message) || _.isEmpty(data.message)) {
+			socket.emit('msgResponse', {id: data.id, response: 'Message body cannot be empty.'});
+		} else {
+			for (var g in data.groups) {
+				// Fail if message is received with group that user is not in
+				if($.inArray(_.findWhere(users, {id: data.id}), data.groups[g]) < 0) {
+					socket.emit('msgResponse', {id: data.id, response: 'You are not in group '+data.groups[g]});
 				} else {
-					console.log("sending message from " + data.id + " to " + data.groups[g]);
-					io.sockets.in(data.groups[g]).emit('newMsg', {id: data.id, user: data.user, group: data.groups[g], time: Date.now().toString(), subject: data.subject, message: data.message});
-					socket.emit('msgResponse', {id: data.id, response: 'success'});
+					db.run("SELECT groups.groupname, users.username FROM groups INNER JOIN grouppost ON grouppost.groupid=groups.groupid INNER JOIN users ON grouppost.userid=users.userid WHERE groups.groupname=$group AND users.username=$user;", {
+						$group: data.group,
+						$user: _.findWhere(users, {id: data.id}).username
+					}, function(err, row) {
+						if(_.isNull(err)) {
+							console.log("sendMsg SQL error: "+err);
+						} else if(_.isUndefined(row) || _.isNull(row)) {
+							console.log("sendMsg error: insufficient permissions");
+						} else {
+							console.log("sending message from " + data.id + " to " + data.groups[g]);
+							io.sockets.in(data.groups[g]).emit('newMsg', {id: data.id, user: _.findWhere(users, {id: data.id}).username, group: data.groups[g], time: Date.now().toString(), subject: data.subject, message: data.message});
+							socket.emit('msgResponse', {id: data.id, response: 'success'});
+						}
+					});
 				}
-			});
+			}
 		}
+
 	});
 
 	socket.on("register", function(data) {
@@ -162,7 +181,7 @@ io.on("connection", function(socket) {
 				$code: data.code,
 				$admin: false
 			}, function(err) {
-				if (err !== null) {
+				if (_.isNull(err)) {
 					console.log("SQL 'register' error: "+err);
 				} else {
 					// Respond to client
@@ -180,22 +199,3 @@ io.on("connection", function(socket) {
 http.listen(app.get("port"), app.get("ipaddr"), function() {
   console.log("Server up and running. Go to http://" + app.get("ipaddr") + ":" + app.get("port"));
 });
-
-/*var sqlite3 = require('sqlite3').verbose();
-var db = new sqlite3.Database('mydb');
-
-db.serialize(function() {
-  db.run("CREATE TABLE IF NOT EXISTS lorem (info TEXT)");
-
-  var stmt = db.prepare("INSERT INTO lorem VALUES (?)");
-  for (var i = 0; i < 10; i++) {
-      stmt.run("Ipsum " + i);
-  }
-  stmt.finalize();
-
-  db.each("SELECT rowid AS id, info FROM lorem", function(err, row) {
-      console.log(row.id + ": " + row.info);
-  });
-});
-
-db.close();*/
