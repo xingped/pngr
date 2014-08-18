@@ -1,0 +1,7 @@
+{
+	"name": "pngr Admin",
+	"main": "index.html",
+	"window": {
+		"toolbar": true
+	}
+}
