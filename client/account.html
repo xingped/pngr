@@ -130,7 +130,6 @@
 
 					if(id === '') {
 						// Add new account entry
-						var newId = mainwin.accounts.length;
 						jsonData.accounts.push({username: $('#username').val(), password: $('#password').val(), server: $('#server').val(), groups: new Array()});
 						// Create new object
 						mainwin.accounts.push(new mainwin.ChatServer($('#username').val(), $('#password').val(), $('#server').val(), new Array()));
