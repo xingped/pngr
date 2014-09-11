@@ -1,6 +1,6 @@
 {
 	"name": "pngr Admin",
-	"main": "index.html",
+	"main": "login.html",
 	"window": {
 		"toolbar": true
 	}

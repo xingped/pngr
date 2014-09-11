@@ -1,0 +1,141 @@
+<html>
+	<head>
+		<script src="js/jquery-1.11.0.min.js"></script>
+    	
+    	<!-- bootstrap -->
+    	<link rel="stylesheet" href="css/bootstrap.min.css" type="text/css">
+    	<script src="js/bootstrap.min.js"></script>
+		
+    	<!-- node-webkit addons -->
+		<script src="js/socket.io.min.js"></script>
+	</head>
+	<body>
+		<div class="container">
+			<div class="row">
+				<div class="col-xs-3"></div>
+				<div class="col-xs-6">
+					<div id="loginPanel" class="panel panel-primary" style="margin-bottom: 0;">
+						<div class="panel-heading">
+							<h3 class="panel-title"><center>Login</center></h3>
+						</div>
+						<div class="panel-body">
+							<select id="serverSelect" class="form-control">
+								<option value="select" disabled selected>Select Server...</option>
+								<!-- Append servers here -->
+							</select>
+							<form id="loginForm" role="form" style="display: none;" action="index.html" method="get">
+								<hr>
+								<div class="form-group">
+									<label for="loginServer">Server:</label>
+									<input type="text" class="form-control" id="loginServer" name="loginServer">
+								</div>
+								<div class="form-group">
+									<label for="loginUser">Username:</label>
+									<input type="text" class="form-control" id="loginUser" name="loginUser">
+								</div>
+								<div class="form-group">
+									<label for="loginPass">Password:</label>
+									<input type="password" class="form-control" id="loginPass" name="loginPass">
+								</div>
+								<div class="checkbox">
+									<label>
+										<input id="save" type="checkbox" checked> Save Server Information
+									</label>
+								</div>
+							</form>
+						</div>
+						<div id="loginFooter" class="panel-footer" style="display: none;">
+							<button id="cancel" class="btn btn-danger pull-left">Cancel</button>
+							<button id="connect" class="btn btn-success pull-right">Connect</button>
+							<div class="clearfix"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+	<script>
+		$(document).ready(function() {
+			var gui = require('nw.gui');
+			var fs = require("fs");
+			var win = gui.Window.get();
+			win.resizeTo(800, 600);
+
+			// Center login panel
+			centerLoginPanel();
+
+			// Populate account list from JSON file
+			var data = fs.readFileSync('test.txt');
+			var jsonData = $.parseJSON(data);
+			
+			$.each(jsonData.accounts, function(i, item) {
+				$('#serverSelect').append('<option value="'+i+'">'+item.server+'</option>');
+			});
+			$('#serverSelect').append('<option disabled>---</option>');
+			$('#serverSelect').append('<option value="add">Add new server...</option>');
+
+			// On selecting a server...
+			$('select').change(function() {
+				// Hide "Select Server..." option
+				$('#serverSelect option[value="select"]').hide();
+
+				// Show input fields and buttons
+				$('#loginForm').show();
+				$('#loginFooter').show();
+
+				// Populate form fields with server info
+				$('#loginServer').val(jsonData.accounts[$('#serverSelect').val()].server);
+				$('#loginUser').val(jsonData.accounts[$('#serverSelect').val()].username);
+				$('#loginPass').val(jsonData.accounts[$('#serverSelect').val()].password);
+
+				centerLoginPanel();
+			});
+
+			// On Connect or Cancel
+			$('#connect').click(function() {
+				// If "Save info.." is checked, save to JSON file
+				if($('#save').is(':checked')) {
+					var index = $('#serverSelect').val();
+					if(index === 'add') {
+						jsonData.accounts.push({server: $('#loginServer').val(), username: $('loginUser').val(), password: $('#loginPass').val()});
+					} else {
+						jsonData.accounts[index].server = $('#loginServer').val();
+						jsonData.accounts[index].username = $('#loginUser').val();
+						jsonData.accounts[index].password = $('#loginPass').val();
+					}
+					fs.writeFileSync('test.txt', JSON.stringify(jsonData, null, '\t'));
+				}
+
+				// Submit form to redirect to index.html
+				$('#loginForm').submit();
+			});
+
+			$('#cancel').click(function() {
+				// Clear form fields, hide fields, unhide and reselect "Select Server..."
+				$('#loginServer').val('');
+				$('#loginUser').val('');
+				$('#loginPass').val('');
+				$('#loginForm').hide();
+				$('#loginFooter').hide();
+				$('#serverSelect option[value="select"]').show();
+				$('#serverSelect').val('select');
+
+				centerLoginPanel();
+			});
+
+			win.on('resize', function() {
+				centerLoginPanel();
+			});
+		});
+
+		function centerLoginPanel() {
+			// Re-center login panel
+			$('#loginPanel').css('margin-top', 0);
+			$('#loginPanel').css('margin-bottom', 0);
+			var nHeight = (($(window).height() - $('#loginPanel').height()) / 2) - 1;
+			if(nHeight < 10) nHeight = 10;
+			$('#loginPanel').css('margin-top', nHeight-1);
+			$('#loginPanel').css('margin-bottom', nHeight-1);
+		};
+	</script>
+</html>

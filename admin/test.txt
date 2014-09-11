@@ -1,0 +1,19 @@
+{
+	"accounts": [
+		{
+			"server": "127.0.0.1:8083",
+			"username": "test",
+			"password": "passw0rd"
+		},
+		{
+			"server": "127.0.0.1:8081",
+			"username": "test2",
+			"password": "passw0rd"
+		},
+		{
+			"server": "127.0.0.1:8080",
+			"username": "test3",
+			"password": "pass"
+		}
+	]
+}

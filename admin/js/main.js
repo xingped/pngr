@@ -2,17 +2,17 @@ var gui = require('nw.gui');
 var fs = require("fs");
 var accounts = new Array();
 
-function ChatServer(username, password, server, groups) {
+function ChatServer(username, password, server) {
 	var self = this;
 	this.username = username;
 	this.password = password;
 	this.server = server;
 	this.sessionId = '';
-	this.groups = groups;
+}
 
-	this.socket = io.connect(server);
-	this.disabled = false;
-	
+ChatServer.prototype.connect = function() {
+	this.socket = io.connect(this.server);
+
 	this.socket.on('connect', function() {
 		self.sessionId = self.socket.socket.sessionid;
 		self.socket.emit('joinServer', {id: self.sessionId, username: self.username, password: self.password});
@@ -49,54 +49,6 @@ function ChatServer(username, password, server, groups) {
 			}
 		}
 	});
-
-	// Add a new message panel on the main screen when a message is received
-	this.socket.on('newMsg', function(data) {
-		var msgHtml = '';
-		msgHtml += '<div class="panel-group" id="' + data.group + data.time + 'group">';
-		msgHtml += '	<div class="panel panel-primary">';
-		msgHtml += '		<div class="panel-heading" data-toggle="collapse" data-target="#' + data.group + data.time + 'msg">';
-		msgHtml += '			<h4 class="panel-title pull-left">' + data.subject + '</h4>';
-		msgHtml += '			<button class="btn btn-default btn-xs pull-right">&#8203;<span class="glyphicon glyphicon-trash"></span></button>';
-		msgHtml += '		<div class="clearfix"></div>';
-		msgHtml += '	</div>';
-		msgHtml += '	<div id="' + data.group + data.time + 'msg" class="panel-collapse collapse in">';
-		msgHtml += '			<div class="panel-body">' + data.message + '</div>';
-		msgHtml += '		</div>';
-		msgHtml += '		<div class="panel-footer">';
-		msgHtml += '			<small>' + data.user + ' to ' + data.group + '</small>';
-		msgHtml += '		</div>';
-		msgHtml += '	</div>';
-		msgHtml += '</div>';
-		
-
-		$('#messages').prepend(msgHtml);
-	});
-
-	/*socket.on('response', function(data) {
-		//$("#response").append(url+": "+data.message+"<br />");
-		
-		var icon = "img/desktop-notify.png";
-		var title = url;
-		var content = data.message;
-		window.LOCAL_NW.desktopNotifications.notify(icon, title, content, function(){
-			$('#status').text('Clicked on '+title);
-			$('#status').fadeIn('fast',function(){
-				setTimeout(function(){
-					$('#status').fadeOut('fast');
-				},1800);
-			});
-		});
-	});*/
-}
-
-ChatServer.prototype.connect = function(group) {
-	this.socket = io.connect(this.url);
-};
-
-ChatServer.prototype.joinGroup = function(group) {
-	this.socket.emit('joinGroup', {id: this.sessionId, user: this.username, group: group});
-	console.log('joinGroup: ' + this.sessionId + ' ' + this.username + ' ' + group);
 };
 
 function init() {
@@ -104,50 +56,14 @@ function init() {
   Initialize node-webkit gui
 ****/
 	var win = gui.Window.get();
-	win.resizeTo(320, 600);
-	var tray = new gui.Tray({title: 'Tray Title', icon: 'img/icon.png'});
-	
-	var menu = new gui.Menu();
-	menu.append(new gui.MenuItem({ type: 'checkbox', label: 'box1' }));
-	menu.append(new gui.MenuItem({
-		label: 'Exit',
-		click: function() {
-			gui.App.quit();
-		}
-	}));
-	tray.menu = menu;
-	
-	tray.on('click', function() {
-		win.show();
-	});
-
-/****
-  Load accounts from file. Accounts connect on creation.
-****/
-	var data = fs.readFileSync('test.txt');
-	var obj = $.parseJSON(data);
-	
-	$.each(obj.accounts, function(i, item) {
-		var groups = new Array();
-		$.each(item.groups, function(g, group) {
-			//console.log(group.name);
-			groups.push(group.name);
-		});
-
-		accounts.push(new ChatServer(item.username, item.password, item.server, groups));
-		
-	});
-	//console.log(accounts.length);
+	win.resizeTo(500, 600);
 }
 
 $(document).on('ready', init);
 
-function openSendMsg()
+function serverConnect(serverId)
 {
-	var msgwin = gui.Window.get(
-		window.open('message.html')
-	);
-	msgwin.resizeTo(400, 600);
+	accounts[serverId].connect();
 }
 
 function openAcntList()
@@ -156,28 +72,4 @@ function openAcntList()
 		window.open('accountlist.html')
 	);
 	acntlistwin.resizeTo(400, 400);
-}
-
-function openAcnt()
-{
-	var acntwin = gui.Window.get(
-		window.open('account.html')
-	);
-	acntwin.resizeTo(300, 350);
-}
-
-function openStngs()
-{
-	var stngwin = gui.Window.get(
-		window.open('settings.html')
-	);
-	stngwin.resizeTo(400, 400);
-}
-
-function openJoin()
-{
-	var joinwin = gui.Window.get(
-		window.open('join.html')
-	);
-	joinwin.resizeTo(300, 230);
 }
