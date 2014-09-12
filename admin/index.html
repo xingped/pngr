@@ -155,17 +155,17 @@
 			****/
 			$('#changeCode').click(function() {
 				// Send message to server with new access code
-
+				socket.emit('adminChangeCode', {id: sessionId, code: $('#changeCode').val()});
 			});
 
 			$('#newCode').click(function() {
 				// Request new code from server
-
+				socket.emit('adminNewCode', {id: sessionId});
 			});
 
 			$('#usersRefresh').click(function() {
 				// remove 'refresh...' text and call update to get server users
-
+				socket.emit('adminGetServerUsers', {id: sessionId});
 			});
 
 			/****
@@ -180,17 +180,19 @@
 
 			$('#openUpdate').click(function() {
 				// Update group's open status based on checkbox
-
+				socket.emit('adminSetGroupOpen', {id: sessionId, groupid: $('#groupSelect').val()});
 			});
 
 			$('#groupRefresh').click(function() {
 				// remove 'refresh...' text and call update to get group users
-
+				if($('#groupSelect').val() !== 'select') {
+					socket.emit('adminGetGroupUsers', {id: sessionId, groupid: $('#groupSelect').val()});
+				}
 			});
 
 			$('#groupAddUser').click(function() {
 				// open window to add user
-				
+
 			});
 
 			win.on('resize', function() {
