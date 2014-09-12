@@ -1,6 +1,7 @@
 <html>
 	<head>
 		<script src="js/jquery-1.11.0.min.js"></script>
+		<script src="js/purl.js"></script>
     	
     	<!-- bootstrap -->
     	<link rel="stylesheet" href="css/bootstrap.min.css" type="text/css">
@@ -11,23 +12,131 @@
 	</head>
 	<body>
 		<div class="container" style="padding-top: 15px; padding-bottom: 15px;">
-				<button class="btn btn-default pull-right">Logout</button>
-				<div class="clearfix"></div>
-				<ul class="nav nav-tabs" role="tablist">
-					<li class="active"><a href="#admin" role="tab" data-toggle="tab">Admin Panel</a></li>
-					<li><a href="#mod" role="tab" data-toggle="tab">Mod Panel</a></li>
-				</ul>
-				<div class="tab-content">
+			<button class="btn btn-sm btn-default pull-right">Logout</button>
+			<ul class="nav nav-tabs" role="tablist">
+				<li class="active"><a href="#admin" role="tab" data-toggle="tab">Admin Panel</a></li>
+				<li><a href="#mod" role="tab" data-toggle="tab">Mod Panel</a></li>
+			</ul>
+			<div class="tab-content well well-sm" style="border-top-left-radius: 0px; border-top-right-radius: 0px;">
 					<div class="tab-pane fade in active" id="admin">
-						admin text here
+						<form class="form-inline">
+							<input type="text" class="form-control" placeholder="AccessCode"></input>
+							<button type="button" class="btn btn-sm btn-default">Change Code</button>
+							<button type="button" class="btn btn-sm btn-default">New User Code</button>
+						</form>
+						<hr style="margin-top: 10px; margin-bottom: 10px;">
+						<h4 style="margin-top: 0;">Users</h4>
+						<div class="well well-sm" style="margin-bottom: 0; padding-top: 0;">
+							<table id="adminTable" class="table table-condensed table-hover" style="margin-bottom: 0;">
+								<thead>
+									<tr>
+										<th>UserId</th>
+										<th>Username</th>
+										<th>Reg Date</th>
+										<th>Access Code</th>
+									</tr>
+								</thead>
+								<tbody id="adminTableBody" style="height: 100%; max-height: 0; overflow-y: auto;">
+									<!-- Add users here -->
+									<tr>
+										<td>1</td>
+										<td>username</td>
+										<td>12-31-2014</td>
+										<td>abcdefg</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
 					</div>
 					<div class="tab-pane fade" id="mod">
-						mod text here
+						<form class="form-inline">
+							<div class="form-group">
+								<label for="groupSelect">Group:</label>
+								<select id="groupSelect" class="form-control">
+									<option value="select" disabled selected>Select Group...</option>
+									<!-- Append groups here -->
+								</select>
+							</div>
+							&nbsp;&nbsp;
+							<div class="checkbox">
+								<label>
+									<input id="freeJoinCheck" type="checkbox" checked> Free Join
+								</label>
+							</div>
+						</form>
+						<hr style="margin-top: 10px; margin-bottom: 10px;">
+						<h4 style="margin-top: 0;">Users</h4>
+						<div class="well well-sm" style="margin-bottom: 0; padding-top: 0;">
+							<table id="modTable" class="table table-condensed table-hover" style="margin-bottom: 0;">
+								<thead>
+									<tr>
+										<th>Username</th>
+										<th>Mod</th>
+										<th>Post</th>
+									</tr>
+								</thead>
+								<tbody id="modTableBody" style="height: 100%; max-height: 0; overflow-y: auto;">
+									<!-- Add users here -->
+									<tr>
+										<td>username</td>
+										<td>---</td>
+										<td>Yes</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
 					</div>
-				</div>
+			</div>
 		</div>
 	</body>
 	<script>
+		$(document).ready(function() {
+			var gui = require('nw.gui');
+			var win = gui.Window.get();
+			win.resizeTo(800, 600);
+			resizeTable();
+			
+			var server = $.url($(location).attr('href')).param('loginServer');
+			var user = $.url($(location).attr('href')).param('loginUser');
+			var pass = $.url($(location).attr('href')).param('loginPass');
+			win.title = 'pngr - ' + user + ' @ ' + server;
 
+			// Socket event for connect, connect response, receive info
+			var socket = io.connect(server);
+			var sessionId = '';
+
+			socket.on('connect', function() {
+				console.log('Connect success');
+				sessionId = socket.socket.sessionid;
+				socket.emit('adminJoinServer', {id: sessionId, user: user, pass: pass});
+			});
+
+			socket.on('disconnect', function() {
+				alert('Disconnected.');
+				$(location).attr('href', 'login.html');
+			});
+
+			socket.on('adminJoinServerResponse', function(data) {
+				// if admin, show admin tab, fill out admin info
+				if(data.security == 1) {
+
+				}
+
+				// if mod, show mod tab, fill out mod info
+				if(data.security == 1 || data.security == 2) {
+
+				}
+			});
+
+			win.on('resize', function() {
+				resizeTable();
+			});
+
+			function resizeTable() {
+				var componentHeights = 264;
+				console.log(win.height);
+				$('#usersTableBody').css('max-height', win.height-componentHeights);
+			};
+		});
 	</script>
 </html>
