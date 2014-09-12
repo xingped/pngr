@@ -38,6 +38,8 @@ db.serialize(function() {
 });
 
 var users = [];
+var admins = [];
+var serverAccessCode = '12345';
 
 //Server's IP address & port number
 app.set("ipaddr", "127.0.0.1");
@@ -50,7 +52,10 @@ io.on("connection", function(socket) {
 		//io.sockets.socket(data.id).emit("response", {message: message});
 	});
 
-	socket.on("joinServer", function(data) {
+	/****
+	  Client functions
+	****/
+	socket.on('joinServer', function(data) {
 		// Search for user in database
 		db.serialize(function() {
 			console.log('checking user credentials');
@@ -76,7 +81,7 @@ io.on("connection", function(socket) {
 		console.log("connection from " + data.id);
 	});
 
-	socket.on("joinGroup", function(data) {
+	socket.on('joinGroup', function(data) {
 		// Check if group exists
 		// If group does not exist, create and join it
 		// If group exists and is open, join it
@@ -176,10 +181,9 @@ io.on("connection", function(socket) {
 				}
 			}
 		}
-
 	});
 
-	socket.on("register", function(data) {
+	socket.on('register', function(data) {
 		var accesscode = "actest";
 
 		if(data.code === accesscode) {
@@ -201,7 +205,121 @@ io.on("connection", function(socket) {
 		} else {
 			socket.emit("regresponse", {id: data.id, response: "Invalid access code."});
 		}
-	})
+	});
+
+	/****
+	  Admin functions
+	****/
+	socket.on('adminJoinServer', function(data) {
+		// Verify login credentials
+		db.serialize(function() {
+			console.log('checking admin credentials');
+			db.get("SELECT username, password, security FROM users WHERE username=$user;", {
+				$user: data.username
+			}, function(err, row) {
+				// Disconnect user if username or password incorrect
+				if (!_.isNull(err)) {
+					console.log('Admin joinServer error: '+err);
+				} else if(_.isUndefined(row) || _.isNull(row)) {
+					console.log('Admin '+data.username+' not found, disconnecting');
+					socket.disconnect(true);
+				} else if(data.password !== row.password) {
+					console.log('Admin bad credentials for user '+data.username+', disconnecting');
+					socket.disconnect(true);
+				} else if(row.security == 0) {
+					console.log('Admin insufficient privileges for user '+data.username+', disconnecting');
+					socket.disconnect(true);
+				} else {
+					console.log('Admin '+data.username+' has successfully joined.');
+					admins.push({id: data.id, username: data.username, security: row.security});
+
+					// Retrieve admin and mod information (not user lists) as appropriate before fully joining
+					// As admin, get server access code, list of all groups and group settings
+					if (row.security == 1) {
+						var groupSet = null;
+						db.all("SELECT groupid, groupname, open FROM groups INNER JOIN ON groupmods WHERE groups.groupid=groupmods.groupid AND groupmods.userid=$adminId;", function(err, rows) {
+							groupSet = rows;
+						});
+						socket.emit('adminJoinServerResponse', {id: data.id, groups: groupSet});
+					} else if(row.security == 2) {
+						var groupSet = null;
+						db.all("SELECT groupid, groupname, open FROM groups;", function(err, rows) {
+							groupSet = rows;
+						});
+						socket.emit('adminJoinServerResponse', {id: data.id, serverCode: serverAccessCode, groups: groupSet});
+					}
+				}
+			});
+		});
+	});
+
+	socket.on('adminChangeCode', function(data) {
+		// Change the server-wide access code
+		if(!_.isUndefined(_.findWhere(admins, {id: data.id, security: 2})) && !_.isNull(data.code)) {
+			serverAccessCode = data.code;
+		}
+	});
+
+	socket.on('adminNewCode', function(data) {
+		// Generate a server registration code for a new user
+		if(!_.isUndefined(_.findWhere(admins, {id: data.id, security: 2}))) {
+
+		}
+	});
+
+	socket.on('adminGetServerUsers', function(data) {
+		// Get all users for admin panel
+		if(!_.isUndefined(_.findWhere(admins, {id: data.id, security: 2}))) {
+			socket.emit('adminGetServerUsersResponse', {id: data.id, users: users});
+		}
+	});
+
+	socket.on('adminEditUser', function(data) {
+		// Edit user's information on admin panel
+		if(!_.isUndefined(_.findWhere(admins, {id: data.id, security: 2})) && !_.isNull(data.userid)) {
+			// Update array and database
+
+		}
+	});
+
+	socket.on('adminSetGroupOpen', function(data) {
+		// Change group's join privileges to open
+		var admin = _.findWhere(admins, {id: data.id})
+		if(_.isUndefined(admin) || _.isNull(data.groupid)) {
+			return;
+		}
+		
+		if(_.contains(admin.groups, data.groupid) || admin.security == 2) {
+			// Update database
+
+		}
+	});
+
+	socket.on('adminGetGroupUsers', function(data) {
+		// Get list of users for a group
+		var admin = _.findWhere(admins, {id: data.id})
+		if(_.isUndefined(admin) || _.isNull(data.groupid)) {
+			return;
+		}
+		
+		if(_.contains(admin.groups, data.groupid) || admin.security == 2) {
+			// Retrieve contents from database
+
+		}
+	});
+
+	socket.on('adminEditGroupUser', function(data) {
+		// Edit group user's information
+		var admin = _.findWhere(admins, {id: data.id})
+		if(_.isUndefined(admin) || _.isNull(data.groupid) || _.isNull(data.userid)) {
+			return;
+		}
+		
+		if(_.contains(admin.groups, data.groupid) || admin.security == 2) {
+			// Update database
+			
+		}
+	});
 });
 
 //Start the http server at port and IP defined before
