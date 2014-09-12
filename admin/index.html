@@ -20,14 +20,18 @@
 			<div class="tab-content well well-sm" style="border-top-left-radius: 0px; border-top-right-radius: 0px;">
 					<div class="tab-pane fade in active" id="admin">
 						<form class="form-inline">
-							<input type="text" class="form-control" placeholder="AccessCode"></input>
-							<button type="button" class="btn btn-sm btn-default">Change Code</button>
-							<button type="button" class="btn btn-sm btn-default">New User Code</button>
+							<input id="accessCode" type="text" class="form-control" placeholder="AccessCode"></input>
+							<button id="changeCode" type="button" class="btn btn-sm btn-default">Change Code</button>
+							<button id="newCode" type="button" class="btn btn-sm btn-default">New User Code</button>
 						</form>
 						<hr style="margin-top: 10px; margin-bottom: 10px;">
-						<h4 style="margin-top: 0;">Users</h4>
-						<div class="well well-sm" style="margin-bottom: 0; padding-top: 0;">
-							<table id="adminTable" class="table table-condensed table-hover" style="margin-bottom: 0;">
+						<h4 style="margin-top: 0; display: inline;">Users</h4>
+						&nbsp;
+						<button id="usersRefresh" type="button" class="btn btn-sm btn-default" style="margin-bottom: 4px;">
+							<span class="glyphicon glyphicon-refresh" style="top: 0px;">&#8203;</span>
+						</button>
+						<div class="well well-sm" style="margin-bottom: 0; padding-top: 0; background-color: white;">
+							<table id="usersTable" class="table table-condensed table-hover" style="margin-bottom: 0;">
 								<thead>
 									<tr>
 										<th>UserId</th>
@@ -36,7 +40,7 @@
 										<th>Access Code</th>
 									</tr>
 								</thead>
-								<tbody id="adminTableBody" style="height: 100%; max-height: 0; overflow-y: auto;">
+								<tbody id="usersTableBody" style="height: 100%; max-height: 0; overflow-y: auto;">
 									<!-- Add users here -->
 									<tr>
 										<td>1</td>
@@ -60,14 +64,22 @@
 							&nbsp;&nbsp;
 							<div class="checkbox">
 								<label>
-									<input id="freeJoinCheck" type="checkbox" checked> Free Join
+									<input id="openCheck" type="checkbox"> Open Group
 								</label>
 							</div>
+							<button id="openUpdate" type="button" class="btn btn-xs btn-default">&#8203;<span class="glyphicon glyphicon-export"></span></button>
 						</form>
 						<hr style="margin-top: 10px; margin-bottom: 10px;">
-						<h4 style="margin-top: 0;">Users</h4>
-						<div class="well well-sm" style="margin-bottom: 0; padding-top: 0;">
-							<table id="modTable" class="table table-condensed table-hover" style="margin-bottom: 0;">
+						<h4 style="margin-top: 0; display: inline;">Users</h4>
+						&nbsp;
+						<button id="groupRefresh" type="button" class="btn btn-sm btn-default" style="margin-bottom: 4px;">
+							<span class="glyphicon glyphicon-refresh" style="top: 0px;">&#8203;</span>
+						</button>
+						<button id="groupAddUser" type="button" class="btn btn-sm btn-default" style="margin-bottom: 4px;">
+							<span class="glyphicon glyphicon-plus" style="top: 0px;">&#8203;</span>
+						</button>
+						<div class="well well-sm" style="margin-bottom: 0; padding-top: 0; background-color: white;">
+							<table id="groupTable" class="table table-condensed table-hover" style="margin-bottom: 0;">
 								<thead>
 									<tr>
 										<th>Username</th>
@@ -75,7 +87,7 @@
 										<th>Post</th>
 									</tr>
 								</thead>
-								<tbody id="modTableBody" style="height: 100%; max-height: 0; overflow-y: auto;">
+								<tbody id="groupTableBody" style="height: 100%; max-height: 0; overflow-y: auto;">
 									<!-- Add users here -->
 									<tr>
 										<td>username</td>
@@ -116,16 +128,69 @@
 				$(location).attr('href', 'login.html');
 			});
 
+			var groupAccess = new Array();
+
 			socket.on('adminJoinServerResponse', function(data) {
-				// if admin, show admin tab, fill out admin info
+				// if mod
 				if(data.security == 1) {
-
+					$.each(data.groups, function(i, item) {
+						$('#groupSelect').append('<option value="'+item.groupid+'">'+item.groupname+'</option>');
+						groupAccess[item.groupid] = item.open;
+					});
 				}
 
-				// if mod, show mod tab, fill out mod info
-				if(data.security == 1 || data.security == 2) {
+				// if admin
+				if(data.security == 2) {
+					$('#accessCode').val(data.serverCode);
 
+					$.each(data.groups, function(i, item) {
+						$('#groupSelect').append('<option value="'+item.groupid+'">'+item.groupname+'</option>');
+						groupAccess[item.groupid] = item.open;
+					});
 				}
+			});
+
+			/****
+			  Admin panel functions
+			****/
+			$('#changeCode').click(function() {
+				// Send message to server with new access code
+
+			});
+
+			$('#newCode').click(function() {
+				// Request new code from server
+
+			});
+
+			$('#usersRefresh').click(function() {
+				// remove 'refresh...' text and call update to get server users
+
+			});
+
+			/****
+			  Mod panel functions
+			****/
+			$('#groupSelect').change(function() {
+				// remove 'select' option, change checkbox, refresh/reset groupUsers list
+				$('#groupSelect option[value="select"]').hide();
+				$('#openCheck').checked(groupAccess[$('#groupSelect').val()]);
+				$('#groupTableBody').html('');
+			});
+
+			$('#openUpdate').click(function() {
+				// Update group's open status based on checkbox
+
+			});
+
+			$('#groupRefresh').click(function() {
+				// remove 'refresh...' text and call update to get group users
+
+			});
+
+			$('#groupAddUser').click(function() {
+				// open window to add user
+				
 			});
 
 			win.on('resize', function() {
