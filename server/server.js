@@ -32,8 +32,8 @@ db.serialize(function() {
 	db.run("CREATE TABLE IF NOT EXISTS grouppost (groupid INTEGER, userid INTEGER, FOREIGN KEY(groupid) REFERENCES groups(groupid), FOREIGN KEY(userid) REFERENCES users(userid));", function(err) {
 		if(err !== null) console.log("Error: Create table 'grouppost': "+err);
 	});
-	db.run("CREATE TABLE IF NOT EXISTS groupadd (groupid INTEGER, userid INTEGER, FOREIGN KEY(groupid) REFERENCES groups(groupid), FOREIGN KEY(userid) REFERENCES users(userid));", function(err) {
-		if(err !== null) console.log("Error: Create table 'groupadd': "+err);
+	db.run("CREATE TABLE IF NOT EXISTS groupmods (groupid INTEGER, userid INTEGER, FOREIGN KEY(groupid) REFERENCES groups(groupid), FOREIGN KEY(userid) REFERENCES users(userid));", function(err) {
+		if(err !== null) console.log("Error: Create table 'groupmods': "+err);
 	});
 });
 
@@ -217,6 +217,7 @@ io.on("connection", function(socket) {
 			db.get("SELECT username, password, security FROM users WHERE username=$user;", {
 				$user: data.username
 			}, function(err, row) {
+				console.log(row.security);
 				// Disconnect user if username or password incorrect
 				if (!_.isNull(err)) {
 					console.log('Admin joinServer error: '+err);
@@ -237,17 +238,28 @@ io.on("connection", function(socket) {
 					// As admin, get server access code, list of all groups and group settings
 					if (row.security == 1) {
 						var groupSet = null;
-						db.all("SELECT groupid, groupname, open FROM groups INNER JOIN ON groupmods WHERE groups.groupid=groupmods.groupid AND groupmods.userid=$adminId;", function(err, rows) {
-							groupSet = rows;
-
+						db.all("SELECT groups.groupid, groups.groupname, groups.open FROM groups INNER JOIN groupmods ON groups.groupid=groupmods.groupid INNER JOIN users ON groupmods.userid=users.userid WHERE users.username=$username;", {
+							$username: data.username
+						}, function(err, rows) {
+							if(err) {
+								console.log('SQL error adminJoinServer sec2: '+err);
+								socket.emit('adminJoinServerResponse', {id: data.id, err: err});
+							} else {
+								groupSet = rows;
+								socket.emit('adminJoinServerResponse', {id: data.id, security: row.security, groups: rows});
+							}
 						});
-						socket.emit('adminJoinServerResponse', {id: data.id, groups: groupSet});
 					} else if(row.security == 2) {
 						var groupSet = null;
 						db.all("SELECT groupid, groupname, open FROM groups;", function(err, rows) {
-							groupSet = rows;
+							if(err) {
+								console.log('SQL error adminJoinServer sec2: '+err);
+								socket.emit('adminJoinServerResponse', {id: data.id, err: err});
+							} else {
+								groupSet = rows;
+								socket.emit('adminJoinServerResponse', {id: data.id, security: row.security, groups: rows, serverCode: serverAccessCode});
+							}
 						});
-						socket.emit('adminJoinServerResponse', {id: data.id, serverCode: serverAccessCode, groups: groupSet});
 					}
 				}
 			});
@@ -260,12 +272,16 @@ io.on("connection", function(socket) {
 			var pattern = /^[a-zA-Z0-9]+$/;
 			if(pattern.test(data.code)) {
 				serverAccessCode = data.code;
+				socket.emit('adminChangeCodeResponse', {id: data.id, code: serverAccessCode});
+			} else {
+				socket.emit('adminChangeCodeResponse', {id: data.id, code: serverAccessCode, err: 'Invalid code format. Letters and Numbers only.'});
 			}
 		}
 	});
 
 	socket.on('adminNewCode', function(data) {
 		// Generate a server registration code for a new user
+		// Store registration code in database
 		if(!_.isUndefined(_.findWhere(admins, {id: data.id, security: 2}))) {
 			var newcode = Math.random().toString(36).substring(7);
 			socket.emit('adminNewCodeResponse', {id: data.id, code: newcode});
@@ -275,7 +291,9 @@ io.on("connection", function(socket) {
 	socket.on('adminGetServerUsers', function(data) {
 		// Get all users for admin panel
 		if(!_.isUndefined(_.findWhere(admins, {id: data.id, security: 2}))) {
-			socket.emit('adminGetServerUsersResponse', {id: data.id, users: users});
+			db.all('SELECT userid, regdate, code, username, security FROM users;', function(err, rows) {
+				socket.emit('adminGetServerUsersResponse', {id: data.id, users: rows});
+			});
 		}
 	});
 
@@ -298,6 +316,12 @@ io.on("connection", function(socket) {
 							// Add to array
 							admins.push({id: data.id, security: data.security});
 						}
+
+						if(security == 0) security = 'User';
+						else if(security == 1) security = 'Mod';
+						else if(security == 2) security = 'Admin';
+
+						socket.emit('adminEditUserResponse', {id: data.id, userid: data.userid, security: data.security});
 					}
 				});
 			});
@@ -320,6 +344,10 @@ io.on("connection", function(socket) {
 				}, function(err) {
 					if(err) {
 						console.log('SQL error set group open: ' + err);
+						socket.emit('adminSetGroupOpenResponse', {id: data.id, err: err});
+					} else {
+						console.log('Set group open: '+data.open);
+						socket.emit('adminSetGroupOpenResponse', {id: data.id, groupid: data.groupid, open: data.open});
 					}
 				});
 			});
@@ -336,13 +364,14 @@ io.on("connection", function(socket) {
 		if(_.contains(admin.groups, data.groupid) || admin.security == 2) {
 			// Retrieve contents from database
 			db.serialize(function() {
-				db.all('SELECT groupid, groupname FROM groups WHERE groupid = $groupid;', {
+				db.all('SELECT users.userid, users.username, groupjoin.groupid, CASE WHEN groupmods.userid IS NOT NULL THEN "Yes" ELSE "---" END AS mod, CASE WHEN grouppost.userid IS NOT NULL THEN "Yes" ELSE "---" END AS post FROM users INNER JOIN groupjoin ON users.userid=groupjoin.userid LEFT JOIN groupmods ON groupjoin.groupid=groupmods.groupid AND users.userid=groupmods.userid LEFT JOIN grouppost ON groupjoin.groupid=grouppost.groupid AND users.userid=grouppost.groupid WHERE groupjoin.groupid=$groupid;', {
 					$groupid: data.groupid
 				}, function(err, rows) {
 					if(err){
 						console.log('SQL error retrieving group users: ' + err);
+						socket.emit('adminGetGroupUsersResponse', {id: data.id, err: err});
 					} else {
-						socket.emit('adminGetGroupUsersResponse', {id: data.id, users: rows});
+						socket.emit('adminGetGroupUsersResponse', {id: data.id, groupid: data.groupid, users: rows});
 					}
 				});
 			});
@@ -364,13 +393,13 @@ io.on("connection", function(socket) {
 					// If post privileges false, remove, otherwise add
 					if(data.post == true) {
 						db.run('INSERT INTO grouppost (groupid, userid) SELECT $groupid, $userid WHERE NOT EXISTS(SELECT 1 FROM grouppost WHERE grouppost.groupid=$groupid AND grouppost.userid=$userid);', {
-									$groupid: data.groupid,
-									$userid: data.userid
-								}, function(err) {
-									if(err) {
-										console.log('SQL error adminEditGroupUser ADD privileges: ' + err);
-									}
-								});
+								$groupid: data.groupid,
+								$userid: data.userid
+							}, function(err) {
+								if(err) {
+									console.log('SQL error adminEditGroupUser ADD privileges: ' + err);
+								}
+							});
 					} else if(data.post == false) {
 						db.run('DELETE FROM grouppost WHERE groupid=$groupid AND userid=$userid;', {
 							$groupid: data.groupid,
@@ -393,6 +422,10 @@ io.on("connection", function(socket) {
 				});
 			}
 		}
+	});
+
+	socket.on('adminAddGroupUser', function(data) {
+
 	});
 });
 

@@ -31,22 +31,24 @@
 							<span class="glyphicon glyphicon-refresh" style="top: 0px;">&#8203;</span>
 						</button>
 						<div class="well well-sm" style="margin-bottom: 0; padding-top: 0; background-color: white;">
-							<table id="usersTable" class="table table-condensed table-hover" style="margin-bottom: 0;">
+							<table id="adminTable" class="table table-condensed table-hover" style="margin-bottom: 0;">
 								<thead>
 									<tr>
 										<th>UserId</th>
 										<th>Username</th>
+										<th>Security</th>
 										<th>Reg Date</th>
 										<th>Access Code</th>
 									</tr>
 								</thead>
-								<tbody id="usersTableBody" style="height: 100%; max-height: 0; overflow-y: auto;">
+								<tbody id="adminTableBody" style="height: 100%; max-height: 0; overflow-y: auto;">
 									<!-- Add users here -->
 									<tr>
-										<td>1</td>
-										<td>username</td>
-										<td>12-31-2014</td>
-										<td>abcdefg</td>
+										<td>---</td>
+										<td>---</td>
+										<td>---</td>
+										<td>---</td>
+										<td>---</td>
 									</tr>
 								</tbody>
 							</table>
@@ -90,9 +92,9 @@
 								<tbody id="groupTableBody" style="height: 100%; max-height: 0; overflow-y: auto;">
 									<!-- Add users here -->
 									<tr>
-										<td>username</td>
 										<td>---</td>
-										<td>Yes</td>
+										<td>---</td>
+										<td>---</td>
 									</tr>
 								</tbody>
 							</table>
@@ -120,32 +122,104 @@
 			socket.on('connect', function() {
 				console.log('Connect success');
 				sessionId = socket.socket.sessionid;
-				socket.emit('adminJoinServer', {id: sessionId, user: user, pass: pass});
+				socket.emit('adminJoinServer', {id: sessionId, username: user, password: pass});
 			});
 
 			socket.on('disconnect', function() {
-				alert('Disconnected.');
-				$(location).attr('href', 'login.html');
+				//alert('Disconnected.');
+				//$(location).attr('href', 'login.html');
 			});
 
 			var groupAccess = new Array();
 
 			socket.on('adminJoinServerResponse', function(data) {
-				// if mod
-				if(data.security == 1) {
+				if(data.err) {
+					alert(data.err);
+				} else {
+					// if admin
+					if(data.security == 2) {
+						$('#accessCode').val(data.serverCode);
+					}
+					
+					// at minimum, all admins are mods, populate groups on mod panel
 					$.each(data.groups, function(i, item) {
 						$('#groupSelect').append('<option value="'+item.groupid+'">'+item.groupname+'</option>');
 						groupAccess[item.groupid] = item.open;
 					});
 				}
+			});
 
-				// if admin
-				if(data.security == 2) {
-					$('#accessCode').val(data.serverCode);
+			socket.on('adminChangeCodeResponse', function(data) {
+				if(data.err) {
+					$('#accessCode').val(data.code);
+					alert(data.err);
+				} else {
+					alert('Code saved.');
+				}
+			});
 
-					$.each(data.groups, function(i, item) {
-						$('#groupSelect').append('<option value="'+item.groupid+'">'+item.groupname+'</option>');
-						groupAccess[item.groupid] = item.open;
+			socket.on('adminNewCodeResponse', function(data) {
+				if(data.err) {
+					alert(data.err);
+				} else {
+					alert('New code: ' + data.code);
+				}
+			});
+
+			socket.on('adminGetServerUsersResponse', function(data) {
+				if(data.err) {
+					alert(data.err);
+				} else {
+					$('#adminTableBody').html('');
+					$.each(data.users, function(i, item) {
+						$('#adminTableBody').append('<tr data-group="admin" data-userid="'+item.userid+'"></tr>');
+						
+						$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td>'+item.userid+'</td>');
+						$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td>'+item.username+'</td>');
+
+						if(item.security == 0) {
+							$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td data-val="0">User</td>');
+						} else if(item.security == 1) {
+							$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td data-val="1">Mod</td>');
+						} else if(item.security == 2) {
+							$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td data-val="2">Admin</td>');
+						}
+						
+						$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td>'+item.regdate+'</td>');
+						$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td>'+item.code+'</td>');
+					});
+				}
+			});
+
+			socket.on('adminEditUserResponse', function(data) {
+				if(data.err) {
+					alert(data.err);
+				} else {
+					alert('User successfully updated.');
+					$('tr [data-group="admin", data-userid="data.userid"] td:nth-child(3)').html(data.security);
+				}
+			});
+
+			socket.on('adminSetGroupOpenResponse', function(data) {
+				if(data.err) {
+					alert(data.err);
+				} else {
+					groupAccess[data.groupid] = data.open;
+				}
+			});
+
+			socket.on('adminGetGroupUsersResponse', function(data) {
+				if(data.err) {
+					alert(data.err);
+				} else if(data.users.length == 0) {
+					$('#groupTableBody').html('<tr><td>---</td><td>---</td><td>---</td></tr>');
+				} else {
+					$('#groupTableBody').html('');
+					$.each(data.users, function(i, item) {
+						$('#groupTableBody').append('<tr data-group="group" data-userid="'+item.userid+'"></tr>');
+						$('tr[data-group="group"][data-userid="'+item.userid+'"]').append('<td>'+item.username+'</td>');
+						$('tr[data-group="group"][data-userid="'+item.userid+'"]').append('<td>'+item.mod+'</td>');
+						$('tr[data-group="group"][data-userid="'+item.userid+'"]').append('<td>'+item.post+'</td>');
 					});
 				}
 			});
@@ -155,7 +229,7 @@
 			****/
 			$('#changeCode').click(function() {
 				// Send message to server with new access code
-				socket.emit('adminChangeCode', {id: sessionId, code: $('#changeCode').val()});
+				socket.emit('adminChangeCode', {id: sessionId, code: $('#accessCode').val()});
 			});
 
 			$('#newCode').click(function() {
@@ -168,23 +242,33 @@
 				socket.emit('adminGetServerUsers', {id: sessionId});
 			});
 
+			$('tr[data-group="admin"]').click(function(e) {
+				// On clicking a row in the user table, bring up the edit window
+				var editWin = win.get(window.open('adminedit.html'));
+				// Set username and current security selection in opened window
+				editWin.$('#username').val($(this).children(':nth-child(2)').html());
+				editWin.$('#securitySelect').val($(this).children(':nth-child(3)').data('val'));
+				// Put socket emit, close, and save code in opened window
+			});
+
 			/****
 			  Mod panel functions
 			****/
 			$('#groupSelect').change(function() {
 				// remove 'select' option, change checkbox, refresh/reset groupUsers list
 				$('#groupSelect option[value="select"]').hide();
-				$('#openCheck').checked(groupAccess[$('#groupSelect').val()]);
-				$('#groupTableBody').html('');
+				$('#openCheck').prop('checked', groupAccess[$('#groupSelect').val()]);
+				$('#groupTableBody').html('<tr><td>---</td><td>---</td><td>---</td></tr>');
 			});
 
 			$('#openUpdate').click(function() {
 				// Update group's open status based on checkbox
-				socket.emit('adminSetGroupOpen', {id: sessionId, groupid: $('#groupSelect').val()});
+				socket.emit('adminSetGroupOpen', {id: sessionId, groupid: $('#groupSelect').val(), open: $('#openCheck').prop('checked')});
 			});
 
 			$('#groupRefresh').click(function() {
 				// remove 'refresh...' text and call update to get group users
+				$('#groupTableBody').html('<tr><td>---</td><td>---</td><td>---</td></tr>');
 				if($('#groupSelect').val() !== 'select') {
 					socket.emit('adminGetGroupUsers', {id: sessionId, groupid: $('#groupSelect').val()});
 				}
