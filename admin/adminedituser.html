@@ -1,0 +1,50 @@
+<html>
+	<head>
+		<script src="js/jquery-1.11.0.min.js"></script>
+		<script src="js/purl.js"></script>
+    	
+    	<!-- bootstrap -->
+    	<link rel="stylesheet" href="css/bootstrap.min.css" type="text/css">
+    	<script src="js/bootstrap.min.js"></script>
+		
+    	<!-- node-webkit addons -->
+		<script src="js/socket.io.min.js"></script>
+	</head>
+	<body>
+		<div class="container" style="margin-top: 10px;">
+			<form id="editUserForm" role="form">
+				<div class="form-group">
+					<p>Edit settings for user <span id="username"></span>:</p>
+					<label for="security">Security:</label>
+					&nbsp;&nbsp;
+					<select id="securitySelect" name="securitySelect">
+						<option value="0">User</option>
+						<option value="1">Mod</option>
+						<option value="2">Admin</option>
+					</select>
+				</div>
+			</form>
+			<button id="cancel" type="button" class="btn btn-sm btn-danger pull-left">Cancel</button>
+			<button id="save" type="button" class="btn btn-sm btn-success pull-right">Save</button>
+			<div class="clearfix"></div>
+		</div>
+	</body>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			window.resizeTo(275, 200);
+			var sessionid = $.url($(location).attr('href')).param('sessionid');
+			var userid = $.url($(location).attr('href')).param('userid');
+			$('#username').html($.url($(location).attr('href')).param('username'));
+			$('#securitySelect').val($.url($(location).attr('href')).param('security'));
+
+			$('#cancel').click(function() {
+				window.close();
+			});
+
+			$('#save').click(function() {
+				window.opener.socket.emit('adminEditUser', {id: sessionid, userid: userid, security: $('#securitySelect').val()});
+				window.close();
+			});
+		});
+	</script>
+</html>
