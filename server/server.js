@@ -11,29 +11,32 @@ var db = new sqlite3.Database('pngrdb');
 
 // Create tables on first run
 db.serialize(function() {
-	db.run("PRAGMA foreign_keys=ON;", function(err) {
-		if(err !== null) console.log("Error: set foreign_keys=ON");
+	db.run('PRAGMA foreign_keys=ON;', function(err) {
+		if(err !== null) console.log('Error: set foreign_keys=ON');
 	});
-	db.run("CREATE TABLE IF NOT EXISTS users (userid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, regdate DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, code TEXT, username TEXT, password TEXT, admin BOOLEAN);", function(err) {
-		if(err !== null) console.log("Error: Create table 'users': "+err);
+	db.run('CREATE TABLE IF NOT EXISTS users (userid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, regdate DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, code TEXT, username TEXT, password TEXT, security INT);', function(err) {
+		if(err !== null) console.log('Error: Create table "users": '+err);
 	});
-	db.run("CREATE UNIQUE INDEX IF NOT EXISTS users_username ON users(username);", function(err) {
-		if(err !== null) console.log("Error: Create INDEX users: "+err);
+	db.run('CREATE UNIQUE INDEX IF NOT EXISTS users_userid ON users(userid);', function(err) {
+		if(err !== null) console.log('Error: Create INDEX users_userid: '+err);
 	});
-	db.run("CREATE TABLE IF NOT EXISTS groups (groupid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, regdate DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, groupname TEXT, open BOOLEAN);", function(err) {
-		if(err !== null) console.log("Error: Create table 'groups': "+err);
+	db.run('CREATE UNIQUE INDEX IF NOT EXISTS users_username ON users(username);', function(err) {
+		if(err !== null) console.log('Error: Create INDEX users_username: '+err);
 	});
-	db.run("CREATE UNIQUE INDEX IF NOT EXISTS groups_groupname ON groups(groupname);", function(err) {
-		if(err !== null) console.log("Error: Create INDEX groups "+err);
+	db.run('CREATE TABLE IF NOT EXISTS groups (groupid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, regdate DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, groupname TEXT, open BOOLEAN);', function(err) {
+		if(err !== null) console.log('Error: Create table "groups": '+err);
 	});
-	db.run("CREATE TABLE IF NOT EXISTS groupjoin (groupid INTEGER, userid INTEGER, FOREIGN KEY(groupid) REFERENCES groups(groupid), FOREIGN KEY(userid) REFERENCES users(userid));", function(err) {
-		if(err !== null) console.log("Error: Create table 'groupjoin': "+err);
+	db.run('CREATE UNIQUE INDEX IF NOT EXISTS groups_groupid ON groups(groupid);', function(err) {
+		if(err !== null) console.log('Error: Create INDEX groups_groupid: '+err);
 	});
-	db.run("CREATE TABLE IF NOT EXISTS grouppost (groupid INTEGER, userid INTEGER, FOREIGN KEY(groupid) REFERENCES groups(groupid), FOREIGN KEY(userid) REFERENCES users(userid));", function(err) {
-		if(err !== null) console.log("Error: Create table 'grouppost': "+err);
+	db.run('CREATE UNIQUE INDEX IF NOT EXISTS groups_groupname ON groups(groupname);', function(err) {
+		if(err !== null) console.log('Error: Create INDEX groups_groupname: '+err);
 	});
-	db.run("CREATE TABLE IF NOT EXISTS groupmods (groupid INTEGER, userid INTEGER, FOREIGN KEY(groupid) REFERENCES groups(groupid), FOREIGN KEY(userid) REFERENCES users(userid));", function(err) {
-		if(err !== null) console.log("Error: Create table 'groupmods': "+err);
+	db.run('CREATE TABLE IF NOT EXISTS permissions (userid INTEGER, groupid INTEGER, mod BOOLEAN, post BOOLEAN, FOREIGN KEY(userid) REFERENCES users(userid), FOREIGN KEY(groupid) REFERENCES users(userid), UNIQUE (userid, groupid) ON CONFLICT IGNORE);', function(err) {
+		if(err) console.log('Error: Create table "permissions": '+err);
+	});
+	db.run('CREATE UNIQUE INDEX IF NOT EXISTS permissions_index ON permissions(userid, groupid);', function(err) {
+		if(err) console.log('Error: Create INDEX permissions_index: '+err);
 	});
 });
 
