@@ -1,6 +1,8 @@
 pngr
 ====
 
+In Beta and feature complete! Code cleanup to follow.
+
 Desktop application based on Node-Webkit, Node.js, and Socket.io for sending and receiving pings (brief messages).
 
 Setup
@@ -19,4 +21,4 @@ Run
 
 Start the server with "nodejs server.js".
 
-Run the client according to node-webkit's instructions: https://github.com/rogerwang/node-webkit/wiki/How-to-run-apps .
+Run the client and admin panel according to node-webkit's instructions: https://github.com/rogerwang/node-webkit/wiki/How-to-run-apps .
