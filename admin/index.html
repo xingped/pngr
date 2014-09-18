@@ -12,13 +12,13 @@
 	</head>
 	<body>
 		<div class="container" style="padding-top: 15px; padding-bottom: 15px;">
-			<button class="btn btn-sm btn-default pull-right">Logout</button>
+			<button id="logout" class="btn btn-sm btn-default pull-right">Logout</button>
 			<ul class="nav nav-tabs" role="tablist">
-				<li class="active"><a href="#admin" role="tab" data-toggle="tab">Admin Panel</a></li>
-				<li><a href="#mod" role="tab" data-toggle="tab">Mod Panel</a></li>
+				<li id="adminTab" class="active"><a href="#adminPanel" role="tab" data-toggle="tab">Admin Panel</a></li>
+				<li id="modTab"><a href="#modPanel" role="tab" data-toggle="tab">Mod Panel</a></li>
 			</ul>
 			<div class="tab-content well well-sm" style="border-top-left-radius: 0px; border-top-right-radius: 0px;">
-					<div class="tab-pane fade in active" id="admin">
+					<div class="tab-pane fade in active" id="adminPanel">
 						<form class="form-inline">
 							<input id="accessCode" type="text" class="form-control" placeholder="AccessCode"></input>
 							<button id="changeCode" type="button" class="btn btn-sm btn-default">Change Code</button>
@@ -30,6 +30,8 @@
 						<button id="usersRefresh" type="button" class="btn btn-sm btn-default" style="margin-bottom: 4px;">
 							<span class="glyphicon glyphicon-refresh" style="top: 0px;">&#8203;</span>
 						</button>
+						&nbsp;&nbsp;
+						<input id="showCodes" type="checkbox"> Include unused codes
 						<div class="well well-sm" style="margin-bottom: 0; padding-top: 0; background-color: white;">
 							<table id="adminTable" class="table table-condensed table-hover" style="margin-bottom: 0;">
 								<thead>
@@ -54,7 +56,7 @@
 							</table>
 						</div>
 					</div>
-					<div class="tab-pane fade" id="mod">
+					<div class="tab-pane fade" id="modPanel">
 						<form class="form-inline">
 							<div class="form-group">
 								<label for="groupSelect">Group:</label>
@@ -116,7 +118,7 @@
 			win.title = 'pngr - ' + user + ' @ ' + server;
 
 			// Socket event for connect, connect response, receive info
-			var socket = io.connect(server);
+			socket = io.connect(server);
 			var sessionId = '';
 
 			socket.on('connect', function() {
@@ -125,9 +127,16 @@
 				socket.emit('adminJoinServer', {id: sessionId, username: user, password: pass});
 			});
 
+			socket.on('error', function() {
+				if(!socket.socket.connected) {
+					alert('Cannot connect to server.');
+					$(location).attr('href', 'login.html');
+				}
+			});
+
 			socket.on('disconnect', function() {
-				//alert('Disconnected.');
-				//$(location).attr('href', 'login.html');
+				alert('Disconnected.');
+				$(location).attr('href', 'login.html');
 			});
 
 			var groupAccess = new Array();
@@ -139,6 +148,10 @@
 					// if admin
 					if(data.security == 2) {
 						$('#accessCode').val(data.serverCode);
+					} else {
+						$('#adminTab').hide();
+						$('#adminTab').removeClass('active');
+						$('#modTab').addClass('active');
 					}
 					
 					// at minimum, all admins are mods, populate groups on mod panel
@@ -171,22 +184,31 @@
 					alert(data.err);
 				} else {
 					$('#adminTableBody').html('');
+					
 					$.each(data.users, function(i, item) {
-						$('#adminTableBody').append('<tr data-group="admin" data-userid="'+item.userid+'"></tr>');
-						
-						$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td>'+item.userid+'</td>');
-						$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td>'+item.username+'</td>');
+						if(item.username || $('#showCodes').prop('checked')) { 
+							$('#adminTableBody').append('<tr data-group="admin" data-userid="'+item.userid+'"></tr>');
+							
+							$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td>'+item.userid+'</td>');
+							if(item.username) {
+								$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td>'+item.	username+'</td>');
+							} else {
+								$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td>---</td>');
+							}
 
-						if(item.security == 0) {
-							$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td data-val="0">User</td>');
-						} else if(item.security == 1) {
-							$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td data-val="1">Mod</td>');
-						} else if(item.security == 2) {
-							$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td data-val="2">Admin</td>');
+							if(item.security == 0) {
+								$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td data-val="0">User</td>');
+							} else if(item.security == 1) {
+								$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td data-val="1">Mod</td>');
+							} else if(item.security == 2) {
+								$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td data-val="2">Admin</td>');
+							} else {
+								$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td>---</td>');
+							}
+							
+							$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td>'+item.regdate+'</td>');
+							$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td>'+item.code+'</td>');
 						}
-						
-						$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td>'+item.regdate+'</td>');
-						$('tr[data-group="admin"][data-userid="'+item.userid+'"]').append('<td>'+item.code+'</td>');
 					});
 				}
 			});
@@ -196,7 +218,15 @@
 					alert(data.err);
 				} else {
 					alert('User successfully updated.');
-					$('tr [data-group="admin", data-userid="data.userid"] td:nth-child(3)').html(data.security);
+					$('tr[data-group="admin", data-userid="data.userid"]:nth-child(3)').html(data.security);
+				}
+			});
+
+			socket.on('adminAddGroupUserResponse', function(data) {
+				if(data.err) {
+					alert(data.err);
+				} else {
+					alert('Successfully added user '+data.username+' to group.');
 				}
 			});
 
@@ -224,6 +254,19 @@
 				}
 			});
 
+			socket.on('adminEditGroupUserRepsonse', function(data) {
+				if(data.err) {
+					alert(data.err);
+				} else {
+					if(data.delete) {
+						alert('User deleted.');
+					} else {
+						$('tr[data-group="group"][data-userid="'+data.userid+'"]:nth-child(2)').html(data.mod);
+						$('tr[data-group="group"][data-userid="'+data.userid+'"]:nth-child(3)').html(data.post);
+					}
+				}
+			});
+
 			/****
 			  Admin panel functions
 			****/
@@ -240,15 +283,6 @@
 			$('#usersRefresh').click(function() {
 				// remove 'refresh...' text and call update to get server users
 				socket.emit('adminGetServerUsers', {id: sessionId});
-			});
-
-			$('tr[data-group="admin"]').click(function(e) {
-				// On clicking a row in the user table, bring up the edit window
-				var editWin = win.get(window.open('adminedit.html'));
-				// Set username and current security selection in opened window
-				editWin.$('#username').val($(this).children(':nth-child(2)').html());
-				editWin.$('#securitySelect').val($(this).children(':nth-child(3)').data('val'));
-				// Put socket emit, close, and save code in opened window
 			});
 
 			/****
@@ -275,8 +309,33 @@
 			});
 
 			$('#groupAddUser').click(function() {
-				// open window to add user
+				// If not "Select..." option, open window to add user
+				if($('#groupSelect').prop('selectedIndex') !== 0) {
+					var addUserWin = gui.Window.get(window.open('addgroupuser.html'));
+				}
+			});
 
+			$('#adminTable').on('click', 'tr', function() {
+				var userid = $(':nth-child(1)', $(this)).html();
+				var username = $(this).children(':nth-child(2)').html();
+				var security = $(this).children(':nth-child(3)').data('val');
+				window.open('adminedituser.html?sessionid='+sessionId+'&userid='+userid+'&username='+username+'&security='+security);
+			});
+
+			$('#groupTable').on('click', 'tr', function() {
+				// On clicking a row in the user table, gather data and bring up the edit window
+				var userid = $(this).data('userid');
+				var username = $(this).children(':nth-child(1)').html();
+				var groupid = $('#groupSelect').val();
+				var groupname = $('#groupSelect option:selected').text();
+				var mod = $(this).children(':nth-child(2)').html() === 'Yes' ? true : false;
+				var post = $(this).children(':nth-child(3)').html() === 'Yes' ? true : false;
+				window.open('groupedituser.html?sessionid='+sessionId+'&userid='+userid+'&username='+username+'&groupid='+groupid+'&groupname='+groupname+'&mod='+mod+'&post='+post);
+			});
+
+			/*******************/
+			$('#logout').click(function() {
+				$(location).attr('href', 'login.html');
 			});
 
 			win.on('resize', function() {

@@ -59,7 +59,7 @@ io.on("connection", function(socket) {
 		// Search for user in database
 		db.serialize(function() {
 			console.log('checking user credentials');
-			db.get("SELECT username, password FROM users WHERE username=$user;", {
+			db.get("SELECT userid, username, password FROM users WHERE username=$user;", {
 				$user: data.username
 			}, function(err, row) {
 				// Disconnect user if username or password incorrect
@@ -73,7 +73,7 @@ io.on("connection", function(socket) {
 					socket.disconnect(true);
 				} else {
 					console.log('User '+data.username+' has successfully joined.');
-					users.push({id: data.id, username: data.username, groups: new Array()});
+					users.push({id: data.id, userid: row.userid, username: data.username, groups: new Array()});
 					socket.emit('joinServerResponse', {id: data.id, response: 'success'});
 				}
 			});
@@ -125,9 +125,9 @@ io.on("connection", function(socket) {
 						} else {
 							console.log("params: "+data.group+" "+data.user);
 							// If group is not open, check if user has permissions
-							db.get("SELECT groups.groupname, users.username FROM groups INNER JOIN groupjoin ON groupjoin.groupid=groups.groupid INNER JOIN users ON groupjoin.userid=users.userid WHERE groups.groupname=$group AND users.username=$user;", {
-								$group: data.group,
-								$user: _.findWhere(users, {id: data.id}).username
+							db.get("SELECT * FROM permissions WHERE userid=$userid AND groupid=$groupid;", {
+								$userid: _.findWhere(users, {id: data.id}).userid,
+								$groupid: data.group
 							}, function(verr, vrow) {
 								console.log('vrow: '+vrow);
 								if(!_.isNull(verr)) {
@@ -162,9 +162,9 @@ io.on("connection", function(socket) {
 				if(_.indexOf(_.findWhere(users, {id: data.id}).groups, data.groups[g]) < 0) {
 					socket.emit('msgResponse', {id: data.id, response: 'You are not in group '+data.groups[g]});
 				} else {
-					db.get("SELECT groups.groupname, users.username FROM groups INNER JOIN grouppost ON grouppost.groupid=groups.groupid INNER JOIN users ON grouppost.userid=users.userid WHERE groups.groupname=$group AND users.username=$user;", {
-						$group: data.groups[g],
-						$user: _.findWhere(users, {id: data.id}).username
+					db.get("SELECT * FROM permissions INNER JOIN groups ON permissions.groupid=groups.groupid WHERE groupname=$groupname AND userid=$userid AND post=1;", {
+						$groupname: data.groups[g],
+						$userid: _.findWhere(users, {id: data.id}).userid
 					}, function(err, row) {
 						if(!_.isNull(err)) {
 							console.log("sendMsg SQL error: "+err);
@@ -186,24 +186,47 @@ io.on("connection", function(socket) {
 	socket.on('register', function(data) {
 		var accesscode = "actest";
 
-		if(data.code === accesscode) {
+		if(data.user === '' || data.pass === '' || data.code === '') {
+			socket.emit('regresponse', {id: data.id, response: 'User, password, or access code missing.'});
+		} else if(data.code === accesscode) {
 			// Insert user into database
-			db.run("INSERT INTO users (code, username, password, admin) VALUES ($code, $user, $pass, $admin);", {
+			db.run("INSERT INTO users (code, username, password, security) VALUES ($code, $user, $pass, $security);", {
 				$user: data.user,
 				$pass: data.pass,
 				$code: data.code,
-				$admin: false
+				$security: 0
 			}, function(err) {
-				if (!_.isNull(err)) {
+				if (err) {
 					console.log("SQL 'register' error: "+err);
 				} else {
-					// Respond to client
 					socket.emit("regresponse", {id: data.id, response: "success"});
 				}
 			});
 
 		} else {
-			socket.emit("regresponse", {id: data.id, response: "Invalid access code."});
+			db.get('SELECT * FROM users WHERE code=$code;', {
+				$code: data.code
+			}, function(err, row) {
+				if(err) {
+					console.log('SQL ERROR register select: '+err);
+				} else if(_.isUndefined(row)) {
+					socket.emit("regresponse", {id: data.id, response: "Invalid access code."});
+				} else if(!_.isNull(row.username)) {
+					socket.emit("regresponse", {id: data.id, response: "Username already exists."});
+				} else {
+					db.run('UPDATE users SET username=$username, password=$password, security=0 WHERE code=$code;', {
+						$username: data.user,
+						$password: data.pass,
+						$code: data.code
+					}, function(uerr) {
+						if(uerr) {
+							console.log('SQL ERROR register update: '+uerr);
+						} else {
+							socket.emit('regresponse', {id: data.id, response: 'success'});
+						}
+					});
+				}
+			});
 		}
 	});
 
@@ -238,7 +261,7 @@ io.on("connection", function(socket) {
 					// As admin, get server access code, list of all groups and group settings
 					if (row.security == 1) {
 						var groupSet = null;
-						db.all("SELECT groups.groupid, groups.groupname, groups.open FROM groups INNER JOIN groupmods ON groups.groupid=groupmods.groupid INNER JOIN users ON groupmods.userid=users.userid WHERE users.username=$username;", {
+						db.all("SELECT groups.groupid, groups.groupname, groups.open FROM groups INNER JOIN permissions ON groups.groupid=permissions.groupid INNER JOIN users ON permissions.userid=users.userid WHERE users.username=$username AND permissions.mod=1;", {
 							$username: data.username
 						}, function(err, rows) {
 							if(err) {
@@ -283,8 +306,18 @@ io.on("connection", function(socket) {
 		// Generate a server registration code for a new user
 		// Store registration code in database
 		if(!_.isUndefined(_.findWhere(admins, {id: data.id, security: 2}))) {
+			// possibly too many collisions, change code generation
 			var newcode = Math.random().toString(36).substring(7);
-			socket.emit('adminNewCodeResponse', {id: data.id, code: newcode});
+			db.run('INSERT INTO users(code) VALUES($code);', {
+				$code: newcode
+			}, function(err) {
+				if(err) {
+					console.log('SQL ERROR adminNewCode: '+err);
+					socket.emit('adminNewCodeResponse', {err: err});
+				} else {
+					socket.emit('adminNewCodeResponse', {id: data.id, code: newcode});
+				}
+			})
 		}
 	});
 
@@ -317,9 +350,9 @@ io.on("connection", function(socket) {
 							admins.push({id: data.id, security: data.security});
 						}
 
-						if(security == 0) security = 'User';
-						else if(security == 1) security = 'Mod';
-						else if(security == 2) security = 'Admin';
+						if(data.security == 0) security = 'User';
+						else if(data.security == 1) security = 'Mod';
+						else if(data.security == 2) security = 'Admin';
 
 						socket.emit('adminEditUserResponse', {id: data.id, userid: data.userid, security: data.security});
 					}
@@ -337,19 +370,16 @@ io.on("connection", function(socket) {
 		
 		if(_.contains(admin.groups, data.groupid) || admin.security == 2) {
 			// Update database
-			db.serialize(function() {
-				db.run('UPDATE groups SET open=$open WHERE groupid = $groupid;', {
-					$open: data.open,
-					$groupid: data.groupid
-				}, function(err) {
-					if(err) {
-						console.log('SQL error set group open: ' + err);
-						socket.emit('adminSetGroupOpenResponse', {id: data.id, err: err});
-					} else {
-						console.log('Set group open: '+data.open);
-						socket.emit('adminSetGroupOpenResponse', {id: data.id, groupid: data.groupid, open: data.open});
-					}
-				});
+			db.run('UPDATE groups SET open=$open WHERE groupid = $groupid;', {
+				$open: data.open,
+				$groupid: data.groupid
+			}, function(err) {
+				if(err) {
+					console.log('SQL error set group open: ' + err);
+					socket.emit('adminSetGroupOpenResponse', {id: data.id, err: err});
+				} else {
+					socket.emit('adminSetGroupOpenResponse', {id: data.id, groupid: data.groupid, open: data.open});
+				}
 			});
 		}
 	});
@@ -364,7 +394,7 @@ io.on("connection", function(socket) {
 		if(_.contains(admin.groups, data.groupid) || admin.security == 2) {
 			// Retrieve contents from database
 			db.serialize(function() {
-				db.all('SELECT users.userid, users.username, groupjoin.groupid, CASE WHEN groupmods.userid IS NOT NULL THEN "Yes" ELSE "---" END AS mod, CASE WHEN grouppost.userid IS NOT NULL THEN "Yes" ELSE "---" END AS post FROM users INNER JOIN groupjoin ON users.userid=groupjoin.userid LEFT JOIN groupmods ON groupjoin.groupid=groupmods.groupid AND users.userid=groupmods.userid LEFT JOIN grouppost ON groupjoin.groupid=grouppost.groupid AND users.userid=grouppost.groupid WHERE groupjoin.groupid=$groupid;', {
+				db.all('SELECT permissions.userid, users.username, permissions.groupid, CASE WHEN permissions.mod=1 THEN "Yes" ELSE "---" END AS mod, CASE WHEN permissions.post=1 THEN "Yes" ELSE "---" END AS post FROM users INNER JOIN permissions ON users.userid=permissions.userid WHERE permissions.groupid=$groupid;', {
 					$groupid: data.groupid
 				}, function(err, rows) {
 					if(err){
@@ -390,42 +420,64 @@ io.on("connection", function(socket) {
 			if(!_.isNull(data.mod) && !_.isNull(data.post)) {
 				// Update mod and post priviliges
 				db.serialize(function() {
-					// If post privileges false, remove, otherwise add
-					if(data.post == true) {
-						db.run('INSERT INTO grouppost (groupid, userid) SELECT $groupid, $userid WHERE NOT EXISTS(SELECT 1 FROM grouppost WHERE grouppost.groupid=$groupid AND grouppost.userid=$userid);', {
-								$groupid: data.groupid,
-								$userid: data.userid
-							}, function(err) {
-								if(err) {
-									console.log('SQL error adminEditGroupUser ADD privileges: ' + err);
-								}
-							});
-					} else if(data.post == false) {
-						db.run('DELETE FROM grouppost WHERE groupid=$groupid AND userid=$userid;', {
-							$groupid: data.groupid,
-							$userid: data.userid
+					if(data.delete) {
+						db.run('DELETE FROM permissions WHERE userid=$userid AND groupid=$groupid;', {
+							$userid: data.userid,
+							$groupid: data.groupid
 						}, function(err) {
 							if(err) {
-								console.log('SQL error adminEditGroupUser delete post: ' + err);
+								console.log('SQL ERROR adminEditGroupUser delete: '+err);
+								socket.emit('adminEditGroupUserResponse', {err: err});
+							} else {
+								socket.emit('adminEditGroupUserResponse', {delete: true, userid: data.userid});
+							}
+						});
+					} else {
+						db.run('INSERT OR REPLACE INTO permissions(userid, groupid, mod, post) VALUES($userid, $groupid, $mod, $post);', {
+							$userid: data.userid,
+							$groupid: data.groupid,
+							$mod: data.mod,
+							$post: data.post
+						}, function(err) {
+							if(err) {
+								console.log('SQL ERROR adminEditGroupUser: '+err);
+							} else {
+								socket.emit('adminEditGroupUserResponse', {id: data.id, mod: data.mod, post: data.post});
 							}
 						});
 					}
-
-					db.run('UPDATE users SET security=$security WHERE users.userid=$userid;', {
-						$security: data.security,
-						$userid: data.userid
-					}, function(err) {
-						if(err) {
-							console.log('Edit User SQL error: '+err);
-						}
-					});
 				});
 			}
 		}
 	});
 
 	socket.on('adminAddGroupUser', function(data) {
-
+		if(data.username !== null && data.username !== '') {
+			db.get('SELECT users.userid FROM users WHERE users.username=$username;', {
+				$username: data.username
+			}, function(err, row) {
+				if(err) {
+					console.log('SQL ERROR adminAddGroupUser select: '+err);
+				} else if(_.isUndefined(row)) {
+					socket.emit('adminAddGroupUserResponse', {err: 'User '+data.username+' does not exist.'});
+				} else {
+					db.run('INSERT OR REPLACE INTO permissions(userid, groupid, mod, post) VALUES($userid, $groupid, $mod, $post);', {
+						$userid: data.userid,
+						$groupid: data.groupid,
+						$mod: data.mod,
+						$post: data.post
+					}, function(err) {
+						if(err) {
+							console.log('SQL ERROR adminEditGroupUser insert: '+err);
+						} else {
+							socket.emit('adminAddGroupUserResponse', {username: data.username});
+						}
+					});
+				}
+			});
+		} else {
+			socket.emit('adminAddGroupUserResponse', {err: 'Username cannot be empty.'});
+		}
 	});
 });
 

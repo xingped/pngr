@@ -84,9 +84,11 @@
 				$('#loginFooter').show();
 
 				// Populate form fields with server info
-				$('#loginServer').val(jsonData.accounts[$('#serverSelect').val()].server);
-				$('#loginUser').val(jsonData.accounts[$('#serverSelect').val()].username);
-				$('#loginPass').val(jsonData.accounts[$('#serverSelect').val()].password);
+				if($('#serverSelect').val() !== 'add') {
+					$('#loginServer').val(jsonData.accounts[$('#serverSelect').val()].server);
+					$('#loginUser').val(jsonData.accounts[$('#serverSelect').val()].username);
+					$('#loginPass').val(jsonData.accounts[$('#serverSelect').val()].password);
+				}
 
 				centerLoginPanel();
 			});
