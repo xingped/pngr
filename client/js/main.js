@@ -57,7 +57,7 @@ function ChatServer(username, password, server, groups) {
 		msgHtml += '	<div class="panel panel-primary">';
 		msgHtml += '		<div class="panel-heading" data-toggle="collapse" data-target="#' + data.group + data.time + 'msg">';
 		msgHtml += '			<h4 class="panel-title pull-left">' + data.subject + '</h4>';
-		msgHtml += '			<button class="btn btn-default btn-xs pull-right">&#8203;<span class="glyphicon glyphicon-trash"></span></button>';
+		msgHtml += '			<button class="btn btn-default btn-xs pull-right" onClick="deleteMsg(this);">&#8203;<span class="glyphicon glyphicon-trash"></span></button>';
 		msgHtml += '		<div class="clearfix"></div>';
 		msgHtml += '	</div>';
 		msgHtml += '	<div id="' + data.group + data.time + 'msg" class="panel-collapse collapse in">';
@@ -141,6 +141,12 @@ function init() {
 }
 
 $(document).on('ready', init);
+
+function deleteMsg(elem)
+{
+	console.log('delete');
+	$(elem).parent().parent().remove();
+}
 
 function openSendMsg()
 {
