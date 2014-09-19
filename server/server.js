@@ -42,9 +42,10 @@ db.serialize(function() {
 });
 
 // Get server settings
-var data = fs.readFileSync('settings.txt');
-var jsonData = $.parseJSON(data);
+var data = fs.readFileSync(__dirname+'/settings.json');
+var jsonData = JSON.parse(data);
 var serverAccessCode = jsonData.serverAccessCode;
+console.log('SAC: '+serverAccessCode);
 
 var users = [];
 var admins = [];
@@ -269,6 +270,7 @@ io.on("connection", function(socket) {
 					// As admin, get server access code, list of all groups and group settings
 					if (row.security == 1) {
 						var groupSet = null;
+						console.log('mod with sec1');
 						db.all("SELECT groups.groupid, groups.groupname, groups.open FROM groups INNER JOIN permissions ON groups.groupid=permissions.groupid INNER JOIN users ON permissions.userid=users.userid WHERE users.username=$username AND permissions.mod=1;", {
 							$username: data.username
 						}, function(err, rows) {
@@ -282,6 +284,7 @@ io.on("connection", function(socket) {
 						});
 					} else if(row.security == 2) {
 						var groupSet = null;
+						console.log('admin with sec2');
 						db.all("SELECT groupid, groupname, open FROM groups;", function(err, rows) {
 							if(err) {
 								console.log('SQL error adminJoinServer sec2: '+err);
@@ -304,7 +307,7 @@ io.on("connection", function(socket) {
 			if(pattern.test(data.code)) {
 				serverAccessCode = data.code;
 				jsonData.serverAccessCode = data.code;
-				fs.writeFileSync('settings.txt', JSON.stringify(jsonData, null, '\t'));
+				fs.writeFileSync('settings.json', JSON.stringify(jsonData, null, '\t'));
 				socket.emit('adminChangeCodeResponse', {id: data.id, code: serverAccessCode});
 			} else {
 				socket.emit('adminChangeCodeResponse', {id: data.id, code: serverAccessCode, err: 'Invalid code format. Letters and Numbers only.'});
