@@ -10,17 +10,17 @@ Setup & Run
 
 Client:
 
-Download node-webkit from https://github.com/rogerwang/node-webkit .
+Download node-webkit from https://github.com/rogerwang/node-webkit
 
 Run client or admin per instructions for your platform here: https://github.com/rogerwang/node-webkit/wiki/How-to-run-apps
 
 
 Server:
 
-Download and install node.js from http://nodejs.org/ .
+Download and install node.js from http://nodejs.org/
 
 In the server directory run "npm install".
 
-Edit the IP addresses in server/server.js and client/js/main.js to the IP address of your computer.
+Edit the IP addresses in server.js to the IP address of your computer.
 
 Start the server with "nodejs server.js".
