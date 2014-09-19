@@ -3,7 +3,8 @@ var express = require("express")
   , http = require("http").createServer(app)
   , io = require("socket.io").listen(http)
   , _ = require("underscore")
-  , $ = require('jquery');
+  , $ = require('jquery')
+  , fs = require('fs');
 
 // Prepare database
 var sqlite3 = require('sqlite3').verbose();
@@ -40,9 +41,13 @@ db.serialize(function() {
 	});
 });
 
+// Get server settings
+var data = fs.readFileSync('settings.txt');
+var jsonData = $.parseJSON(data);
+var serverAccessCode = jsonData.serverAccessCode;
+
 var users = [];
 var admins = [];
-var serverAccessCode = '12345';
 
 //Server's IP address & port number
 app.set("ipaddr", "127.0.0.1");
@@ -298,6 +303,8 @@ io.on("connection", function(socket) {
 			var pattern = /^[a-zA-Z0-9]+$/;
 			if(pattern.test(data.code)) {
 				serverAccessCode = data.code;
+				jsonData.serverAccessCode = data.code;
+				fs.writeFileSync('settings.txt', JSON.stringify(jsonData, null, '\t'));
 				socket.emit('adminChangeCodeResponse', {id: data.id, code: serverAccessCode});
 			} else {
 				socket.emit('adminChangeCodeResponse', {id: data.id, code: serverAccessCode, err: 'Invalid code format. Letters and Numbers only.'});
