@@ -26,7 +26,7 @@
 					</div>
 					<div class="col-xs-9">
 						<div class="input-group" style="width: 100%;">
-							<input id="password" type="text" class="form-control" placeholder="password">
+							<input id="password" type="password" class="form-control" placeholder="password">
 							<span id="changepassbtn" class="input-group-btn hidden">
 								<button id="changepass" type="button" class="btn btn-default">
 									&#8203;<span class="glyphicon glyphicon-transfer"></span>
@@ -136,9 +136,9 @@
 					} else {
 						// Update existing account entry
 						jsonData.accounts[id].username = $('#username').val();
-						jsonData.server[id].server = $('#server').val();
+						jsonData.accounts[id].server = $('#server').val();
 						mainwin.accounts[id].username = $('#username').val();
-						mainwin.server[id].server = $('#server').val();
+						mainwin.accounts[id].server = $('#server').val();
 					}
 
 					fs.writeFileSync('test.txt', JSON.stringify(jsonData, null, '\t'));
